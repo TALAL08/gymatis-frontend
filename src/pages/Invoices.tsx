@@ -1,0 +1,261 @@
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { InvoiceService } from '@/services/invoiceService';
+import { useAuth } from '@/contexts/AuthContext';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
+import { Search, Receipt, DollarSign, AlertCircle } from 'lucide-react';
+import { PaymentDialog } from '@/components/invoices/PaymentDialog';
+import { Invoice } from '@/models/interfaces/Invoice';
+import { InvoiceStatus } from '@/models/enums/InvoiceStatus';
+import { Card, CardContent } from '@/components/ui/card';
+
+export default function Invoices() {
+  const { gymId, isAdmin, isStaff } = useAuth();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | keyof typeof InvoiceStatus>('all');
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+
+  const canManage = isAdmin || isStaff;
+
+  const { data: invoices, isLoading, refetch } = useQuery({
+    queryKey: ['invoices', gymId, statusFilter],
+    queryFn: async () => {
+      if (!gymId) return [];
+      let allInvoices = await InvoiceService.getInvoicesByGym(gymId);
+
+      // Apply status filter
+      if (statusFilter !== 'all') {
+        allInvoices = allInvoices.filter(inv => InvoiceStatus[statusFilter] === inv.status);
+      }
+      return allInvoices;
+    },
+    enabled: !!gymId,
+  });
+
+  const filteredInvoices = invoices?.filter((invoice) => {
+    const member = invoice.member;
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      invoice.invoiceNumber.toLowerCase().includes(searchLower) ||
+      `${member.firstName} ${member.lastName}`.toLowerCase().includes(searchLower) ||
+      member.memberCode.toLowerCase().includes(searchLower)
+    );
+  });
+
+  const getStatusBadge = (status: InvoiceStatus) => {
+    const variants: Record<InvoiceStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+      [InvoiceStatus.Paid]: 'default',
+      [InvoiceStatus.PartiallyPaid]: 'default',      
+      [InvoiceStatus.Pending]: 'secondary',
+      [InvoiceStatus.Overdue]: 'destructive',
+      [InvoiceStatus.Cancelled]: 'outline',
+    };
+    const label = InvoiceStatus[status];
+    return <Badge variant={variants[status]}>{label.toUpperCase()}</Badge>;
+  };
+
+  const handlePayment = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setIsPaymentOpen(true);
+  };
+
+  const overdueInvoices = invoices?.filter(inv => inv.status === InvoiceStatus.Overdue).length || 0;
+
+  const totalPending = invoices
+    ?.filter(
+      inv =>
+        inv.status === InvoiceStatus.Pending || inv.status === InvoiceStatus.Overdue
+    )
+    .reduce((sum, inv) => sum + Number(inv.netAmount), 0) || 0;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading invoices...</div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="container mx-auto p-6 space-y-6">
+
+      <div className="flex items-center justify-between animate-fade-in-up">
+
+        <div>
+          <h1 className="text-4xl font-bold">Invoices</h1>
+          <p className="text-muted-foreground">Manage invoices and payments</p>
+        </div>
+
+      </div>
+
+        {/* Header */}
+        <div>
+
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-slide-in">
+          <div className="bg-card border border-border rounded-lg p-6 flex items-center gap-3">
+            <div className="p-3 bg-primary/10 rounded-lg">
+              <Receipt className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Total Invoices</p>
+              <p className="text-2xl font-bold text-foreground">{invoices?.length || 0}</p>
+            </div>
+          </div>
+          <div className="bg-card border border-border rounded-lg p-6 flex items-center gap-3">
+            <div className="p-3 bg-destructive/10 rounded-lg">
+              <AlertCircle className="w-6 h-6 text-destructive" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Overdue</p>
+              <p className="text-2xl font-bold text-foreground">{overdueInvoices}</p>
+            </div>
+          </div>
+          <div className="bg-card border border-border rounded-lg p-6 flex items-center gap-3">
+            <div className="p-3 bg-accent/10 rounded-lg">
+              <DollarSign className="w-6 h-6 text-accent" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Pending Amount</p>
+              <p className="text-2xl font-bold text-foreground">{totalPending.toFixed(2)}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <Card className="animate-slide-in">
+          <CardContent className="pt-6">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by invoice number, member name, or code..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
+                <SelectTrigger className="w-full md:w-[200px]">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="Paid">Paid</SelectItem>
+                  <SelectItem value="partiallyPaid">Partially Paid</SelectItem>
+                  <SelectItem value="Overdue">Overdue</SelectItem>
+                  <SelectItem value="Cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+          </CardContent>
+        </Card>
+
+
+        {/* Invoices Table */}
+        <div className="bg-card border border-border rounded-lg overflow-hidden animate-slide-in">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Invoice #</TableHead>
+                <TableHead>Member</TableHead>
+                <TableHead>Package</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Due Date</TableHead>
+                <TableHead>Created</TableHead>
+                {canManage && <TableHead>Actions</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredInvoices?.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8">
+                    <div className="text-muted-foreground">
+                      <Receipt className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>No invoices found</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredInvoices?.map(invoice => {
+                  const subscription = invoice.subscription;
+
+                  return (
+                    <TableRow key={invoice.id}>
+                      <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
+                      <TableCell>
+                        {invoice.member.firstName} {invoice.member.lastName}
+                        <div className="text-xs text-muted-foreground">{invoice.member.memberCode}</div>
+                      </TableCell>
+                      <TableCell>{subscription.package.name || 'N/A'}</TableCell>
+                      <TableCell>
+                        <div className="font-medium">{Number(invoice.netAmount).toFixed(2)}</div>
+                        {Number(invoice.discount) > 0 && (
+                          <div className="text-xs text-muted-foreground">
+                            Discount: {Number(invoice.discount).toFixed(2)}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>{getStatusBadge(invoice.status)}</TableCell>
+                      <TableCell>
+                        {invoice.dueDate ? format(new Date(invoice.dueDate), 'MMM dd, yyyy') : 'N/A'}
+                      </TableCell>
+                      <TableCell>{format(new Date(invoice.createdAt), 'MMM dd, yyyy')}</TableCell>
+                      {canManage && (
+                        <TableCell>
+                          {(invoice.status === InvoiceStatus.Pending || invoice.status === InvoiceStatus.Overdue) && (
+                            <Button size="sm" onClick={() => handlePayment(invoice)}>
+                              Record Payment
+                            </Button>
+                          )}
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {selectedInvoice && (
+        <PaymentDialog
+          open={isPaymentOpen}
+          onOpenChange={setIsPaymentOpen}
+          invoice={selectedInvoice}
+          onSuccess={() => {
+            refetch();
+            setIsPaymentOpen(false);
+            setSelectedInvoice(null);
+          }}
+        />
+      )}
+    </>
+  );
+}
