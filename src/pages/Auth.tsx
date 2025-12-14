@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { getDefaultTimezone, GetTimezones } from '@/lib/utils';
 
 const signInSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -28,15 +29,19 @@ const signUpSchema = z.object({
   gymPhone: z.string().optional(),
   gymEmail: z.string().email('Invalid email address').optional().or(z.literal('')),
   gymAddress: z.string().optional(),
+  timezone: z.string(), 
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
 });
 
+const TIMEZONES = GetTimezones;
+
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
+  const detectedTimezone = useMemo(() => getDefaultTimezone(), []);
 
   useEffect(() => {
     if (user) {
@@ -57,6 +62,7 @@ const Auth = () => {
     defaultValues: {
       firstName: '',
       lastName: '',
+      timezone: detectedTimezone,      
       email: '',
       password: '',
       confirmPassword: '',
@@ -86,6 +92,7 @@ const Auth = () => {
         values.password, 
         values.firstName, 
         values.lastName, 
+        values.timezone,
         values.phone,
         values.gymName,
         values.gymLocation,
@@ -384,7 +391,7 @@ const Auth = () => {
                             <FormMessage />
                           </FormItem>
                         )}
-                      />
+                      />                      
                     </div>
                   </CardContent>
                   <CardFooter>
