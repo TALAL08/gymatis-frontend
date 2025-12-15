@@ -1,7 +1,25 @@
 import { Package } from "@/models/interfaces/Package";
+import { PaginatedResponse, PaginationParams } from "@/models/interfaces/PaginatedResponse";
 import axiosClient from "@/utils/axios-client";
 
 export class PackageService {
+  /**
+   * Get paginated packages for a gym
+   */
+  static async getPackagesByGymPaginated(
+    gymId: number,
+    params: PaginationParams
+  ): Promise<PaginatedResponse<Package>> {
+    const res = await axiosClient.get<PaginatedResponse<Package>>(`/packages/gym/${gymId}/paginated`, {
+      params: {
+        pageNo: params.pageNo,
+        pageSize: params.pageSize,
+        searchText: params.searchText || '',
+      },
+    });
+    return res.data;
+  }
+
   /**
    * Get all packages for a gym
    */

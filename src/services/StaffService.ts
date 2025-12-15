@@ -1,9 +1,24 @@
 import { StaffCreateRequest } from "@/models/interfaces/requests/StaffCreateRequest";
 import { StaffUpdateRequest } from "@/models/interfaces/requests/StaffUpdateRequest";
 import { Staff } from "@/models/interfaces/Staff";
+import { PaginatedResponse, PaginationParams } from "@/models/interfaces/PaginatedResponse";
 import axiosClient from "@/utils/axios-client";
 
 export class StaffService {
+  static async getStaffsByGymPaginated(
+    gymId: number,
+    params: PaginationParams
+  ): Promise<PaginatedResponse<Staff>> {
+    const res = await axiosClient.get<PaginatedResponse<Staff>>(`/staffs/gym/${gymId}/paginated`, {
+      params: {
+        pageNo: params.pageNo,
+        pageSize: params.pageSize,
+        searchText: params.searchText || '',
+      },
+    });
+    return res.data;
+  }
+
   static async getStaffsByGym(gymId: number): Promise<Staff[]> {
     const res = await axiosClient.get(`/staffs/gym/${gymId}`);
     return res.data;

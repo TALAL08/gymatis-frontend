@@ -1,7 +1,23 @@
 import { Member } from "@/models/interfaces/member";
+import { PaginatedResponse, PaginationParams } from "@/models/interfaces/PaginatedResponse";
 import axiosClient from "@/utils/axios-client";
 
 export class MemberService {
+
+  static async getMembersByGymPaginated(
+    gymId: number,
+    params: PaginationParams & { status?: string }
+  ): Promise<PaginatedResponse<Member>> {
+    const res = await axiosClient.get<PaginatedResponse<Member>>(`/members/gym/${gymId}/paginated`, {
+      params: {
+        pageNo: params.pageNo,
+        pageSize: params.pageSize,
+        searchText: params.searchText || '',
+        status: params.status || '',
+      },
+    });
+    return res.data;
+  }
 
   static async getMembersByGym(gymId: number): Promise<Member[]> {
     const res = await axiosClient.get<Member[]>(`/members/gym/${gymId}`);

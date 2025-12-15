@@ -1,43 +1,68 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { StaffService } from '@/services/StaffService';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, Search, Phone, Edit, Trash2 } from 'lucide-react';
+import { UserPlus, Search, Phone, Users } from 'lucide-react';
 import { AddStaffDialog } from '@/components/staff/AddStaffDialog';
 import { EditStaffDialog } from '@/components/staff/EditStaffDialog';
 import { Staff } from '@/models/interfaces/Staff';
+import { usePagination } from '@/hooks/use-pagination';
+import { DataTablePagination } from '@/components/ui/data-table-pagination';
+import { useDebounce } from '@/hooks/use-debounce';
 
 const Staffs = () => {
   const { gymId } = useAuth();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [localSearch, setLocalSearch] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [editingStaff, setEditingStaff] = useState<Staff>(null);
+  const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
 
+  const {
+    pageNo,
+    pageSize,
+    searchText,
+    setPageNo,
+    setPageSize,
+    setSearchText,
+    pageSizeOptions,
+  } = usePagination({ defaultPageSize: 10 });
 
-  const { data: staffMembers, isLoading, refetch } = useQuery({
-    queryKey: ['staff', gymId],
+  const debouncedSearch = useDebounce(localSearch, 400);
+
+  useEffect(() => {
+    if (debouncedSearch !== searchText) {
+      setSearchText(debouncedSearch);
+    }
+  }, [debouncedSearch, searchText, setSearchText]);
+
+  useEffect(() => {
+    setLocalSearch(searchText);
+  }, []);
+
+  const { data: paginatedData, isLoading, refetch } = useQuery({
+    queryKey: ['staff', gymId, pageNo, pageSize, searchText],
     queryFn: async () => {
-      if (!gymId) return [];
-      return await StaffService.getStaffsByGym(Number(gymId));
+      if (!gymId) return { data: [], totalCount: 0, pageNo: 1, pageSize: 10, totalPages: 0 };
+      return await StaffService.getStaffsByGymPaginated(Number(gymId), {
+        pageNo,
+        pageSize,
+        searchText,
+      });
     },
     enabled: !!gymId,
   });
 
-  const filteredStaff = staffMembers?.filter(staff =>
-    `${staff.firstName} ${staff.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    staff.user.phoneNumber?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const staffMembers = paginatedData?.data ?? [];
+  const totalCount = paginatedData?.totalCount ?? 0;
+  const totalPages = paginatedData?.totalPages ?? 0;
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-
       <div className="flex items-center justify-between animate-fade-in-up">
-
         <div>
           <h1 className="text-4xl font-bold">Staff Management</h1>
           <p className="text-muted-foreground">Manage your gym staff accounts</p>
@@ -46,7 +71,6 @@ const Staffs = () => {
           <UserPlus className="w-4 h-4 mr-2" />
           Add Staff
         </Button>
-
       </div>
 
       <Card className="animate-slide-in">
@@ -56,13 +80,12 @@ const Staffs = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
                 placeholder="Search staff by name or phone..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
                 className="pl-10"
               />
             </div>
           </div>
-
         </CardContent>
       </Card>
 
@@ -70,56 +93,79 @@ const Staffs = () => {
         <CardContent className="space-y-4">
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">Loading staff...</div>
-          ) : filteredStaff && filteredStaff.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>CNIC</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredStaff.map((staff) => (
-                  <TableRow key={staff.id}>
-                    <TableCell className="font-medium">
-                      {staff.firstName} {staff.lastName}
-                    </TableCell>
-                    <TableCell>
-                      {staff.user.phoneNumber && (
-                        <div className="flex items-center gap-2">
-                          <Phone className="w-4 h-4 text-muted-foreground" />
-                          {staff.user.phoneNumber}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>{staff.cnic || '-'}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">Staff</Badge>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(staff.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditingStaff(staff)}
-                        >
-                        </Button>
-                      </div>
-                    </TableCell>
+          ) : staffMembers && staffMembers.length > 0 ? (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>CNIC</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Joined</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {staffMembers.map((staff) => (
+                    <TableRow key={staff.id}>
+                      <TableCell className="font-medium">
+                        {staff.firstName} {staff.lastName}
+                      </TableCell>
+                      <TableCell>
+                        {staff.user.phoneNumber && (
+                          <div className="flex items-center gap-2">
+                            <Phone className="w-4 h-4 text-muted-foreground" />
+                            {staff.user.phoneNumber}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>{staff.cnic || '-'}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">Staff</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(staff.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingStaff(staff)}
+                          >
+                            Edit
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <DataTablePagination
+                pageNo={pageNo}
+                pageSize={pageSize}
+                totalCount={totalCount}
+                totalPages={totalPages}
+                pageSizeOptions={pageSizeOptions}
+                onPageChange={setPageNo}
+                onPageSizeChange={setPageSize}
+                isLoading={isLoading}
+              />
+            </>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              No staff members found
+            <div className="text-center py-12">
+              <Users className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No staff members found</h3>
+              <p className="text-muted-foreground mb-4">
+                {searchText ? 'Try adjusting your search' : 'Get started by adding your first staff member'}
+              </p>
+              {!searchText && (
+                <Button variant="energetic" onClick={() => setShowAddDialog(true)}>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Add Your First Staff Member
+                </Button>
+              )}
             </div>
           )}
         </CardContent>

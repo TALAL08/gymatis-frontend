@@ -27,6 +27,7 @@ const gymFormSchema = z.object({
   timeZone: z.string().optional().nullable(),
   settings: z.object({
     invoiceOverdueInDays: z.coerce.number().min(1, 'Must be at least 1 day'),
+    memberSuspendInDays: z.coerce.number().min(1, 'Must be at least 1 day'),
     memberInactiveInDays: z.coerce.number().min(1, 'Must be at least 1 day'),
   })
 });
@@ -65,6 +66,7 @@ export default function GymSettings() {
       timeZone: detectedTimezone,
       settings:{
       invoiceOverdueInDays: 1,
+      memberSuspendInDays: 1,        
       memberInactiveInDays: 1,        
       }
     },
@@ -81,6 +83,7 @@ export default function GymSettings() {
         timeZone: gym.timeZone || detectedTimezone,
         settings:{
         invoiceOverdueInDays: gym.settings.invoiceOverdueInDays,
+        memberSuspendInDays: gym.settings.memberSuspendInDays,          
         memberInactiveInDays: gym.settings.memberInactiveInDays,          
         }
       });
@@ -141,6 +144,7 @@ export default function GymSettings() {
       timeZone: data.timeZone || null,
       settings: {
         invoiceOverdueInDays: data.settings.invoiceOverdueInDays,
+        memberSuspendInDays: data.settings.memberSuspendInDays,
         memberInactiveInDays: data.settings.memberInactiveInDays,
       },
     };
@@ -413,8 +417,27 @@ export default function GymSettings() {
                 {errors.settings?.invoiceOverdueInDays && (
                   <p className="text-sm text-destructive">{errors.settings.invoiceOverdueInDays.message}</p>
                 )}
+
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="memberSuspendInDays">
+                  Member Suspend (Days) <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="memberSuspendInDays"
+                  type="number"
+                  min={1}
+                  placeholder="e.g., 30"
+                  {...register('settings.memberSuspendInDays')}
+                />
+                <p className="text-xs text-muted-foreground">
+                  After how many days of an unpaid invoice the member becomes suspended
+                </p>
+                {errors.settings?.memberSuspendInDays && (
+                  <p className="text-sm text-destructive">{errors.settings.memberSuspendInDays.message}</p>
+                )}
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="memberInactiveInDays">
                   Member Inactive (Days) <span className="text-destructive">*</span>
@@ -434,6 +457,7 @@ export default function GymSettings() {
                 )}
               </div>
             </div>
+
 
             <Button
               type="button"

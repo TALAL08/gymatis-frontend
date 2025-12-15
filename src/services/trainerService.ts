@@ -1,9 +1,25 @@
 import { TrainerCreateRequest } from "@/models/interfaces/requests/TrainerCreateRequest";
 import { TrainerUpdateRequest } from "@/models/interfaces/requests/TrainerUpdateRequest";
 import { Trainer } from "@/models/interfaces/Trainer";
+import { PaginatedResponse, PaginationParams } from "@/models/interfaces/PaginatedResponse";
 import axiosClient from "@/utils/axios-client";
 
 export class TrainerService {
+  static async getTrainersByGymPaginated(
+    gymId: number,
+    params: PaginationParams & { status?: string }
+  ): Promise<PaginatedResponse<Trainer>> {
+    const res = await axiosClient.get<PaginatedResponse<Trainer>>(`/trainers/gym/${gymId}/paginated`, {
+      params: {
+        pageNo: params.pageNo,
+        pageSize: params.pageSize,
+        searchText: params.searchText || '',
+        status: params.status || '',
+      },
+    });
+    return res.data;
+  }
+
   static async getTrainersByGym(gymId: number): Promise<Trainer[]> {
     const res = await axiosClient.get(`/trainers/gym/${gymId}`);
     return res.data;

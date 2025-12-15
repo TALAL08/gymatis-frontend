@@ -1,10 +1,26 @@
 import { SubscriptionCreateRequest } from "@/models/interfaces/requests/SubscriptionCreateRequest";
 import { SubscriptionUpdateRequest } from "@/models/interfaces/requests/SubscriptionUpdateRequest";
 import { Subscription } from "@/models/interfaces/Subscription";
+import { PaginatedResponse, PaginationParams } from "@/models/interfaces/PaginatedResponse";
 import axiosClient from "@/utils/axios-client";
 
 
 export class SubscriptionService {
+  static async getSubscriptionsByGymPaginated(
+    gymId: number,
+    params: PaginationParams & { status?: string }
+  ): Promise<PaginatedResponse<Subscription>> {
+    const res = await axiosClient.get<PaginatedResponse<Subscription>>(`/memberSubscriptions/gym/${gymId}/paginated`, {
+      params: {
+        pageNo: params.pageNo,
+        pageSize: params.pageSize,
+        searchText: params.searchText || '',
+        status: params.status || '',
+      },
+    });
+    return res.data;
+  }
+
   static async getSubscriptionsByGym(gymId: number): Promise<Subscription[]> {
     const res = await axiosClient.get(`/memberSubscriptions/gym/${gymId}`);
     return res.data;

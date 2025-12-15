@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { MemberService } from '@/services/memberService';
@@ -11,42 +11,63 @@ import { AddMemberDialog } from '@/components/members/AddMemberDialog';
 import { ImportMembersDialog } from '@/components/members/ImportMembersDialog';
 import { Link } from 'react-router-dom';
 import { MemberStatus } from '@/models/enums/MemberStatus';
+import { usePagination } from '@/hooks/use-pagination';
+import { DataTablePagination } from '@/components/ui/data-table-pagination';
+import { useDebounce } from '@/hooks/use-debounce';
 
 const Members = () => {
   const { gymId } = useAuth();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [localSearch, setLocalSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'Active' | 'Inactive' | 'Suspended'>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
-  const { data: members, isLoading } = useQuery({
-    queryKey: ['members', gymId, searchQuery, statusFilter],
+  const {
+    pageNo,
+    pageSize,
+    searchText,
+    setPageNo,
+    setPageSize,
+    setSearchText,
+    pageSizeOptions,
+  } = usePagination({ defaultPageSize: 10 });
+
+  const debouncedSearch = useDebounce(localSearch, 400);
+
+  // Sync local search with URL when debounced value changes
+  useEffect(() => {
+    if (debouncedSearch !== searchText) {
+      setSearchText(debouncedSearch);
+    }
+  }, [debouncedSearch, searchText, setSearchText]);
+
+  // Initialize local search from URL on mount
+  useEffect(() => {
+    setLocalSearch(searchText);
+  }, []);
+
+  const { data: paginatedData, isLoading, refetch } = useQuery({
+    queryKey: ['members', gymId, pageNo, pageSize, searchText, statusFilter],
     queryFn: async () => {
-      if (!gymId) return [];
-      
-      let allMembers = await MemberService.getMembersByGym(gymId);
-      
-      // Apply search filter
-      if (searchQuery) {
-        const searchLower = searchQuery.toLowerCase();
-        allMembers = allMembers.filter(member =>
-          member.firstName.toLowerCase().includes(searchLower) ||
-          member.lastName.toLowerCase().includes(searchLower) ||
-          member.memberCode.toLowerCase().includes(searchLower) ||
-          member.user.phoneNumber.toLowerCase().includes(searchLower)
-        );
-      }
-
-      // Apply status filter
-      if (statusFilter !== 'all') {
-        allMembers = allMembers.filter(member => member.status.toString() === statusFilter);
-
-      }
-
-      return allMembers;
+      if (!gymId) return { data: [], totalCount: 0, pageNo: 1, pageSize: 10, totalPages: 0 };
+      return await MemberService.getMembersByGymPaginated(gymId, {
+        pageNo,
+        pageSize,
+        searchText,
+        status: statusFilter === 'all' ? '' : statusFilter,
+      });
     },
     enabled: !!gymId,
   });
+
+  const members = paginatedData?.data ?? [];
+  const totalCount = paginatedData?.totalCount ?? 0;
+  const totalPages = paginatedData?.totalPages ?? 0;
+
+  const handleStatusFilterChange = (status: 'all' | 'Active' | 'Inactive' | 'Suspended') => {
+    setStatusFilter(status);
+    setPageNo(1); // Reset to first page when filter changes
+  };
 
   const getStatusColor = (status: MemberStatus) => {
     switch (status) {
@@ -63,73 +84,72 @@ const Members = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
-        <div className="flex items-center justify-between animate-fade-in-up">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">Members</h1>
-            <p className="text-muted-foreground">Manage your gym members</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
-              <Upload className="mr-2 h-4 w-4" />
-              Import
-            </Button>
-            <Button variant="energetic" onClick={() => setIsAddDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Member
-            </Button>
-          </div>
+      <div className="flex items-center justify-between animate-fade-in-up">
+        <div>
+          <h1 className="text-4xl font-bold mb-2">Members</h1>
+          <p className="text-muted-foreground">Manage your gym members</p>
         </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
+            <Upload className="mr-2 h-4 w-4" />
+            Import
+          </Button>
+          <Button variant="energetic" onClick={() => setIsAddDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Member
+          </Button>
+        </div>
+      </div>
 
-        <Card className="animate-slide-in">
-          <CardContent className="pt-6">
+      <Card className="animate-slide-in">
+        <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search by name, code, or phone..."
                 className="pl-10"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
               />
             </div>
             <div className="flex gap-2">
               <Button
                 variant={statusFilter === 'all' ? 'default' : 'outline'}
-                onClick={() => setStatusFilter('all')}
+                onClick={() => handleStatusFilterChange('all')}
               >
                 All
               </Button>
               <Button
                 variant={statusFilter === 'Active' ? 'default' : 'outline'}
-                onClick={() => setStatusFilter('Active')}
+                onClick={() => handleStatusFilterChange('Active')}
               >
                 Active
               </Button>
               <Button
                 variant={statusFilter === 'Inactive' ? 'default' : 'outline'}
-                onClick={() => setStatusFilter('Inactive')}
+                onClick={() => handleStatusFilterChange('Inactive')}
               >
                 Inactive
               </Button>
               <Button
                 variant={statusFilter === 'Suspended' ? 'default' : 'outline'}
-                onClick={() => setStatusFilter('Suspended')}
+                onClick={() => handleStatusFilterChange('Suspended')}
               >
                 Suspended
               </Button>
             </div>
           </div>
+        </CardContent>
+      </Card>
 
-          </CardContent>
-        </Card>
-
-        <Card className="p-6 card-glow animate-slide-in">
-
-          {isLoading ? (
-            <div className="text-center py-12 text-muted-foreground">
-              Loading members...
-            </div>
-          ) : members && members.length > 0 ? (
+      <Card className="p-6 card-glow animate-slide-in">
+        {isLoading ? (
+          <div className="text-center py-12 text-muted-foreground">
+            Loading members...
+          </div>
+        ) : members && members.length > 0 ? (
+          <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {members.map((member) => (
                 <Link
@@ -180,33 +200,50 @@ const Members = () => {
                 </Link>
               ))}
             </div>
-          ) : (
-            <div className="text-center py-12">
-              <UserCircle className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No members found</h3>
-              <p className="text-muted-foreground mb-4">
-                {searchQuery || statusFilter !== 'all'
-                  ? 'Try adjusting your search or filters'
-                  : 'Get started by adding your first member'}
-              </p>
-              {!searchQuery && statusFilter === 'all' && (
-                <Button variant="energetic" onClick={() => setIsAddDialogOpen(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Your First Member
-                </Button>
-              )}
-            </div>
-          )}
-        </Card>
+            <DataTablePagination
+              pageNo={pageNo}
+              pageSize={pageSize}
+              totalCount={totalCount}
+              totalPages={totalPages}
+              pageSizeOptions={pageSizeOptions}
+              onPageChange={setPageNo}
+              onPageSizeChange={setPageSize}
+              isLoading={isLoading}
+            />
+          </>
+        ) : (
+          <div className="text-center py-12">
+            <UserCircle className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No members found</h3>
+            <p className="text-muted-foreground mb-4">
+              {searchText || statusFilter !== 'all'
+                ? 'Try adjusting your search or filters'
+                : 'Get started by adding your first member'}
+            </p>
+            {!searchText && statusFilter === 'all' && (
+              <Button variant="energetic" onClick={() => setIsAddDialogOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Your First Member
+              </Button>
+            )}
+          </div>
+        )}
+      </Card>
 
       <AddMemberDialog
         open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
+        onOpenChange={(open) => {
+          setIsAddDialogOpen(open);
+          if (!open) refetch();
+        }}
       />
 
       <ImportMembersDialog
         open={isImportDialogOpen}
-        onOpenChange={setIsImportDialogOpen}
+        onOpenChange={(open) => {
+          setIsImportDialogOpen(open);
+          if (!open) refetch();
+        }}
       />
     </div>
   );

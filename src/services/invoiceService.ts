@@ -1,7 +1,23 @@
 import { Invoice } from "@/models/interfaces/Invoice";
+import { PaginatedResponse, PaginationParams } from "@/models/interfaces/PaginatedResponse";
 import axiosClient from "@/utils/axios-client";
 
 export class InvoiceService {
+  static async getInvoicesByGymPaginated(
+    gymId: number,
+    params: PaginationParams & { status?: string }
+  ): Promise<PaginatedResponse<Invoice>> {
+    const res = await axiosClient.get<PaginatedResponse<Invoice>>(`/invoices/gym/${gymId}/paginated`, {
+      params: {
+        pageNo: params.pageNo,
+        pageSize: params.pageSize,
+        searchText: params.searchText || '',
+        status: params.status || '',
+      },
+    });
+    return res.data;
+  }
+
   static async getInvoicesByGym(gymId: number): Promise<Invoice[]> {
     const res = await axiosClient.get(`/invoices/gym/${gymId}`);
     return res.data;
