@@ -14,6 +14,7 @@ import { Staff } from '@/models/interfaces/Staff';
 import { usePagination } from '@/hooks/use-pagination';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import { useDebounce } from '@/hooks/use-debounce';
+import { UserRole } from '@/models/enums/Gender';
 
 const Staffs = () => {
   const { gymId } = useAuth();
@@ -122,7 +123,7 @@ const Staffs = () => {
                       </TableCell>
                       <TableCell>{staff.cnic || '-'}</TableCell>
                       <TableCell>
-                        <Badge variant="secondary">Staff</Badge>
+                        <Badge variant="secondary">{UserRole[staff.user.userType]}</Badge>
                       </TableCell>
                       <TableCell>
                         {new Date(staff.createdAt).toLocaleDateString()}
