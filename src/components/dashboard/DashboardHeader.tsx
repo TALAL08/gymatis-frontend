@@ -64,7 +64,7 @@ export const DashboardHeader = () => {
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">
-                      {user.name}
+                      {profile.firstName} {profile.lastName}
                     </p>
                     <p className="text-xs leading-none text-muted-foreground">
                       {user?.email}

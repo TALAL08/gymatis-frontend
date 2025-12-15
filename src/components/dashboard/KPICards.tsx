@@ -6,7 +6,6 @@ import { SubscriptionService } from "@/services/subscriptionService";
 import { AttendanceService } from "@/services/attendanceService";
 import { TransactionService } from "@/services/transactionService";
 import { useAuth } from "@/contexts/AuthContext";
-import { startOfMonth } from "date-fns";
 import { SubscriptionStatus } from "@/models/enums/SubscriptionStatus";
 import { MemberStatus } from "@/models/enums/MemberStatus";
 

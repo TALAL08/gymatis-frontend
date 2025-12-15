@@ -3,8 +3,8 @@ import axiosClient from "@/utils/axios-client";
 
 export class AttendanceService {
 
-  static async getAttendanceByGym(gymId: number): Promise<AttendanceLog[]> {
-    const res = await axiosClient.get(`/attendancelogs/gym/${gymId}`);
+  static async getAttendanceByGym(gymId: number,startDate:string,endDate:string): Promise<AttendanceLog[]> {
+    const res = await axiosClient.get(`/attendancelogs/gym/${gymId}/${startDate}/${endDate}`);
     return res.data;
   }
 

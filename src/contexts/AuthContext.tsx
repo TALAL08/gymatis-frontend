@@ -4,12 +4,10 @@ import { toast } from 'sonner';
 import { AuthService } from '@/services/authService';
 import { jwtDecode } from "jwt-decode";
 import { UserRole } from '@/models/enums/Gender';
-import { ApplicationUser } from '@/models/interfaces/ApplicationUser';
-
 
 interface AuthContextType {
-  user: ApplicationUser | null;
-  profile: Profile | null;
+  user: UserDto | null;
+  profile: UserProfile | null;
   token: string;
   loading: boolean;
   signUp: (
@@ -35,12 +33,23 @@ interface AuthContextType {
   isMember: boolean;
   gymId: number| null;
 }
-
-interface Profile{
-  firstName:string;
-  lastName:string;
-  cnic:string|null;
-  gymId : number;
+interface SignInResponse {
+  token: string;
+  profile: UserProfile;
+  user: UserDto;
+}
+interface UserDto {
+  id: string;
+  email: string;
+  phoneNumber: string;
+  isBlocked:boolean;
+}
+interface UserProfile{
+  firstName: string;
+  lastName: string;
+  cnic?: string;
+  gymId: number;
+  timeZone: string;
 }
 interface DecodedToken {
   sub: string;
@@ -51,8 +60,8 @@ interface DecodedToken {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<ApplicationUser | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [user, setUser] = useState<UserDto | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -120,7 +129,7 @@ const signUp = async (
 // --------------------------------------------------
 const signIn = async (email: string, password: string) => {
   try {
-    const res = await AuthService.signIn(email, password);
+    const res = await AuthService.signIn<SignInResponse>(email, password);
     console.log(res)
     // Response contains → { token, user }
     const { token, user, profile} = res;
@@ -128,6 +137,7 @@ const signIn = async (email: string, password: string) => {
     // Save token for future API calls
     localStorage.setItem("access_token", token);
     localStorage.setItem("user", JSON.stringify(user));    
+    localStorage.setItem("timeZone", JSON.stringify(profile.timeZone));        
     localStorage.setItem("profile", JSON.stringify(profile));        
     const decoded: DecodedToken = jwtDecode(token);
     

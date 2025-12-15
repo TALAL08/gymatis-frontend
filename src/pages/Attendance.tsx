@@ -13,6 +13,7 @@ import { LogIn, LogOut, Search, Clock, Calendar } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { Member } from "@/models/interfaces/member";
 import { MemberStatus } from "@/models/enums/MemberStatus";
+import { convertUtcToTimeZone, getUtcDayBoundaries } from "@/lib/datetime-utils";
 
 export default function Attendance() {
   const { gymId, user } = useAuth();
@@ -36,7 +37,11 @@ export default function Attendance() {
     queryKey: ["attendance", "recent", gymId],
     queryFn: async () => {
       if (!gymId) return [];
-      const allAttendance = await AttendanceService.getAttendanceByGym(gymId);
+
+      const todayUtc = getUtcDayBoundaries(0);
+      const yesterdayUtc = getUtcDayBoundaries(1);
+
+      const allAttendance = await AttendanceService.getAttendanceByGym(gymId,yesterdayUtc,todayUtc);
       return allAttendance.slice(0, 50);
     },
     enabled: !!gymId,
@@ -241,7 +246,7 @@ export default function Attendance() {
                         {log.member.firstName} {log.member.lastName}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Code: {log.member.memberCode} • Checked in {formatDistanceToNow(new Date(log.checkInAt), { addSuffix: true })}
+                        Code: {log.member.memberCode} • Checked in {formatDistanceToNow(new Date(convertUtcToTimeZone(log.checkInAt)), { addSuffix: true })}
                       </p>
                     </div>
                   </div>
@@ -292,13 +297,13 @@ export default function Attendance() {
                         {log.member.firstName} {log.member.lastName}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Check-in: {format(new Date(log.checkInAt), "MMM dd, yyyy HH:mm")}
+                        Check-in: {format(new Date(convertUtcToTimeZone(log.checkInAt)), "MMM dd, yyyy HH:mm")}
                       </p>
                     </div>
                   </div>
                   <Badge variant={log.checkOutAt ? "secondary" : "default"}>
                     {log.checkOutAt
-                      ? `Out: ${format(new Date(log.checkOutAt), "HH:mm")}`
+                      ? `Out: ${format(new Date(convertUtcToTimeZone(log.checkOutAt)), "HH:mm")} `
                       : "Currently In"}
                   </Badge>
                 </div>

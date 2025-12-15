@@ -17,6 +17,7 @@ import { Download, FileText, Printer, Search } from "lucide-react";
 import { exportToPDF, exportToCSV, printTable } from "@/lib/export-utils";
 import { format } from "date-fns";
 import { AttendanceLog } from "@/models/interfaces/AttendanceLog";
+import { convertUtcToTimeZone } from "@/lib/datetime-utils";
 
 const ReportAttendance = () => {
   const { gymId } = useAuth();
@@ -44,17 +45,10 @@ const ReportAttendance = () => {
   const fetchAttendanceData = async () => {
     try {
       setLoading(true);
-      const allAttendance = await AttendanceService.getAttendanceByGym(gymId!);
-      
-      // Filter by date range
-      const filtered = allAttendance.filter(log => {
-        const checkInDate = new Date(log.checkInAt);
-        return checkInDate >= new Date(startDate) && 
-               checkInDate <= new Date(endDate + 'T23:59:59');
-      });
+      const allAttendance = await AttendanceService.getAttendanceByGym(gymId,startDate,endDate);
 
-      setAttendanceData(filtered as any);
-      setFilteredData(filtered as any);
+      setAttendanceData(allAttendance);
+      setFilteredData(allAttendance);
     } catch (error) {
       console.error("Error fetching attendance data:", error);
     } finally {
@@ -72,7 +66,7 @@ const ReportAttendance = () => {
       const fullName = `${record.member.firstName} ${record.member.lastName}`.toLowerCase();
       const memberCode = record.member.memberCode.toLowerCase();
       const search = searchTerm.toLowerCase();
-      
+
       return fullName.includes(search) || memberCode.includes(search);
     });
 
@@ -81,11 +75,11 @@ const ReportAttendance = () => {
 
   const calculateDuration = (checkIn: string, checkOut: string | null) => {
     if (!checkOut) return "Still checked in";
-    
+
     const duration = new Date(checkOut).getTime() - new Date(checkIn).getTime();
     const hours = Math.floor(duration / (1000 * 60 * 60));
     const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     return `${hours}h ${minutes}m`;
   };
 
@@ -243,16 +237,16 @@ const ReportAttendance = () => {
                         {record.member.firstName} {record.member.lastName}
                       </TableCell>
                       <TableCell>
-                        {format(new Date(record.checkInAt), "MMM dd, yyyy HH:mm")}
+                        {format(new Date(convertUtcToTimeZone(record.checkInAt)), "MMM dd, yyyy HH:mm")}
                       </TableCell>
                       <TableCell>
-                        {record.checkOutAt 
-                          ? format(new Date(record.checkOutAt), "MMM dd, yyyy HH:mm")
+                        {record.checkOutAt
+                          ? format(new Date(convertUtcToTimeZone(record.checkOutAt)), "MMM dd, yyyy HH:mm")
                           : <span className="text-muted-foreground">N/A</span>
                         }
                       </TableCell>
                       <TableCell>
-                        {calculateDuration(record.checkInAt, record.checkOutAt)}
+                        {calculateDuration(convertUtcToTimeZone(record.checkInAt), record.checkOutAt ? convertUtcToTimeZone(record.checkOutAt) : record.checkOutAt)}
                       </TableCell>
                     </TableRow>
                   ))

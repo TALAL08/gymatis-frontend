@@ -3,15 +3,6 @@ import axiosClient from "@/utils/axios-client";
 
 export class AuthService {
 
-  static async signUpUser(email: string, password: string, metadata?: any) {
-    const res = await axiosClient.post("/auth/signup-user", {
-      email,
-      password,
-      metadata
-    });
-    return res.data;
-  }
-
   static async signUp(
     email: string,
     password: string,
@@ -42,8 +33,8 @@ export class AuthService {
     return res.data;
   }
 
-  static async signIn(email: string, password: string) {
-    const res = await axiosClient.post("/auth/login", { email, password });
+  static async signIn<T>(email: string, password: string):Promise<T> {
+    const res = await axiosClient.post<T>("/auth/login", { email, password });
     return res.data; // contains {token, user}
   }
 
@@ -53,11 +44,6 @@ export class AuthService {
 
   static async getSession() {
     return null; // JWT stored in localStorage
-  }
-
-  static async getCurrentUser() {
-    const res = await axiosClient.get("/auth/user");
-    return res.data;
   }
 
   static async resetPassword(email: string) {
@@ -72,9 +58,5 @@ export class AuthService {
       oldPassword,
       newPassword,
     });
-  }
-
-  static async deleteUser(userId: string) {
-    await axiosClient.delete(`/auth/delete/${userId}`);
   }
 }

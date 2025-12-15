@@ -10,6 +10,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AttendanceLog } from "@/models/interfaces/AttendanceLog";
 import { Subscription } from "@/models/interfaces/Subscription";
+import { getUtcDayBoundaries } from "@/lib/datetime-utils";
 
 interface Activity {
   member: string;
@@ -29,9 +30,11 @@ export const RecentActivity = () => {
 
       try {
         setLoading(true);
-        
+
         // Fetch recent check-ins
-        const allAttendance = await AttendanceService.getAttendanceByGym(gymId);
+        const todayUtc = getUtcDayBoundaries(0);
+        const yesterdayUtc = getUtcDayBoundaries(1);
+        const allAttendance = await AttendanceService.getAttendanceByGym(gymId, yesterdayUtc, todayUtc);
         const recentCheckIns = allAttendance.slice(0, 3);
 
         // Fetch recent subscriptions

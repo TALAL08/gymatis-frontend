@@ -38,8 +38,4 @@ export class InvoiceService {
     const res = await axiosClient.patch(`/invoices/cancel/${id}`);
     return res.data;
   }
-
-  static async updateOverdueInvoices(gymId: number): Promise<void> {
-    await axiosClient.patch(`/invoices/update-overdue/${gymId}`);
-  }
 }

@@ -1,15 +1,12 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { MemberService } from "@/services/memberService";
-import { SubscriptionService } from "@/services/subscriptionService";
 import { InvoiceService } from "@/services/invoiceService";
 import { TrainerService } from "@/services/trainerService";
 import { AttendanceService } from "@/services/attendanceService";
-import { TransactionService } from "@/services/transactionService";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  TrendingUp, 
   Users, 
   DollarSign, 
   Activity,
@@ -23,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 import { InvoiceStatus } from "@/models/enums/InvoiceStatus";
 import { MemberStatus } from "@/models/enums/MemberStatus";
+import { getUtcDayBoundaries } from "@/lib/datetime-utils";
 
 const COLORS = ['hsl(16 100% 60%)', 'hsl(142 76% 45%)', 'hsl(45 93% 47%)', 'hsl(0 84% 60%)'];
 
@@ -70,13 +68,11 @@ const Reports = () => {
       const activeMembers = members?.filter(m => m.status === MemberStatus.Active).length || 0;
 
       // Fetch attendance stats
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const allAttendance = await AttendanceService.getAttendanceByGym(gymId!);
-      const recentAttendance = allAttendance.filter(log => 
-        new Date(log.checkInAt) >= thirtyDaysAgo
-      );
+      const todayUtc = getUtcDayBoundaries(0);
+      const thirtyDaysAgoUtc = getUtcDayBoundaries(30);      
+      const allAttendance = await AttendanceService.getAttendanceByGym(gymId,thirtyDaysAgoUtc,todayUtc);
 
-      const totalAttendance = recentAttendance?.length || 0;
+      const totalAttendance = allAttendance.length || 0;
 
       // Fetch trainer stats
       const trainers = await TrainerService.getTrainersByGym(gymId!);
@@ -139,8 +135,13 @@ const Reports = () => {
         const dayStart = new Date(date.setHours(0, 0, 0, 0)).toISOString();
         const dayEnd = new Date(date.setHours(23, 59, 59, 999)).toISOString();
         
-        const dayAttendance = recentAttendance
-          ?.filter(att => att.checkInAt >= dayStart && att.checkInAt <= dayEnd)
+        const dayAttendance = Array.from(
+          new Map(
+            allAttendance
+              ?.filter(att => att.checkInAt >= dayStart && att.checkInAt <= dayEnd)
+              .map(att => [att.memberId, att]) // key = memberId
+          ).values()
+        )
           .length || 0;
 
         return {
