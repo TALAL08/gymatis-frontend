@@ -1,3 +1,5 @@
+import { GymSetting } from "../GymSetting";
+
 export interface GymUpdateRequest {
   name: string;
   location?: string | null;
@@ -5,4 +7,5 @@ export interface GymUpdateRequest {
   email?: string | null;
   address?: string | null;
   timeZone?: string | null;
+  settings:GymSetting;
 }

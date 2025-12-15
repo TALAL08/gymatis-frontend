@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Upload, Building2, MapPin, Phone, Mail, Save, Globe } from 'lucide-react';
+import { Loader2, Upload, Building2, MapPin, Phone, Mail, Save, Globe, Settings } from 'lucide-react';
 import { GymService } from '@/services/gymService';
 import { useAuth } from '@/contexts/AuthContext';
 import { GymUpdateRequest } from '@/models/interfaces/requests/GymUpdateRequest';
@@ -25,6 +25,10 @@ const gymFormSchema = z.object({
   phone: z.string().max(20, 'Phone must be less than 20 characters').optional().nullable(),
   email: z.string().email('Invalid email address').max(255, 'Email must be less than 255 characters').optional().nullable().or(z.literal('')),
   timeZone: z.string().optional().nullable(),
+  settings: z.object({
+    invoiceOverdueInDays: z.coerce.number().min(1, 'Must be at least 1 day'),
+    memberInactiveInDays: z.coerce.number().min(1, 'Must be at least 1 day'),
+  })
 });
 
 type GymFormValues = z.infer<typeof gymFormSchema>;
@@ -59,10 +63,13 @@ export default function GymSettings() {
       phone: '',
       email: '',
       timeZone: detectedTimezone,
+      settings:{
+      invoiceOverdueInDays: 1,
+      memberInactiveInDays: 1,        
+      }
     },
   });
 
-  // Populate form when gym data loads
   useEffect(() => {
     if (gym) {
       reset({
@@ -72,6 +79,10 @@ export default function GymSettings() {
         phone: gym.phone || '',
         email: gym.email || '',
         timeZone: gym.timeZone || detectedTimezone,
+        settings:{
+        invoiceOverdueInDays: gym.settings.invoiceOverdueInDays,
+        memberInactiveInDays: gym.settings.memberInactiveInDays,          
+        }
       });
       setLogoPreview(gym.logo);
     }
@@ -128,6 +139,10 @@ export default function GymSettings() {
       phone: data.phone || null,
       email: data.email || null,
       timeZone: data.timeZone || null,
+      settings: {
+        invoiceOverdueInDays: data.settings.invoiceOverdueInDays,
+        memberInactiveInDays: data.settings.memberInactiveInDays,
+      },
     };
     updateMutation.mutate(updateData);
   };
@@ -368,6 +383,76 @@ export default function GymSettings() {
                 )}
               </Button>
             </form>
+          </CardContent>
+        </Card>
+        {/* Settings Card */}
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Settings
+            </CardTitle>
+            <CardDescription>Configure automation rules for invoices and members</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="invoiceOverdueInDays">
+                  Invoice Overdue (Days) <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="invoiceOverdueInDays"
+                  type="number"
+                  min={1}
+                  placeholder="e.g., 7"
+                  {...register('settings.invoiceOverdueInDays')}
+                />
+                <p className="text-xs text-muted-foreground">
+                  After how many days an invoice should be marked as overdue
+                </p>
+                {errors.settings?.invoiceOverdueInDays && (
+                  <p className="text-sm text-destructive">{errors.settings.invoiceOverdueInDays.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="memberInactiveInDays">
+                  Member Inactive (Days) <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="memberInactiveInDays"
+                  type="number"
+                  min={1}
+                  placeholder="e.g., 30"
+                  {...register('settings.memberInactiveInDays')}
+                />
+                <p className="text-xs text-muted-foreground">
+                  After how many days of an unpaid invoice the member becomes inactive
+                </p>
+                {errors.settings?.memberInactiveInDays && (
+                  <p className="text-sm text-destructive">{errors.settings.memberInactiveInDays.message}</p>
+                )}
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              className="w-full mt-6"
+              disabled={updateMutation.isPending || !isDirty}
+              onClick={handleSubmit(onSubmit)}
+            >
+              {updateMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save All Settings
+                </>
+              )}
+            </Button>
           </CardContent>
         </Card>
       </div>
