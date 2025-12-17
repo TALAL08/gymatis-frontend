@@ -3,7 +3,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { TransactionService } from '@/services/transactionService';
-import { InvoiceService } from '@/services/invoiceService';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -160,9 +159,8 @@ export function PaymentDialog({ open, onOpenChange, invoice, onSuccess }: Paymen
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="1">Cash</SelectItem>
-                      <SelectItem value="2">Card</SelectItem>
-                      <SelectItem value="3">Bank Transfer</SelectItem>
-                      <SelectItem value="4">Other</SelectItem>
+                      <SelectItem value="2">Online Transfer</SelectItem>
+                      <SelectItem value="3">Cheque</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
