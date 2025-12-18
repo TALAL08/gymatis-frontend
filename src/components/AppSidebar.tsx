@@ -9,7 +9,12 @@ import {
   BarChart3,
   ChevronRight,
   UserCog,
-  Settings
+  Settings,
+  Wallet,
+  BadgeDollarSign,
+  BookOpen,
+  PieChart,
+  TrendingUp,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -39,8 +44,17 @@ const mainItems = [
   { title: "Gym Settings", url: "/gym-settings", icon: Settings, allowedRoles: [UserRole.Admin] },
 ];
 
+const accountsItems = [
+  { title: "Accounts", url: "/accounts", icon: Wallet, allowedRoles: [UserRole.Admin, UserRole.Staff] },
+  { title: "Expenses", url: "/expenses", icon: BadgeDollarSign, allowedRoles: [UserRole.Admin, UserRole.Staff] },
+  { title: "Account Ledger", url: "/account-ledger", icon: BookOpen, allowedRoles: [UserRole.Admin, UserRole.Staff] },
+];
+
 const reportItems = [
   { title: "Reports Dashboard", url: "/reports", icon: BarChart3, allowedRoles: [UserRole.Admin, UserRole.Staff] },
+  { title: "Account Summary", url: "/reports/account-summary", icon: PieChart, allowedRoles: [UserRole.Admin, UserRole.Staff] },
+  { title: "Expense Report", url: "/reports/expenses", icon: BadgeDollarSign, allowedRoles: [UserRole.Admin, UserRole.Staff] },
+  { title: "Income vs Expense", url: "/reports/income-expense", icon: TrendingUp, allowedRoles: [UserRole.Admin, UserRole.Staff] },
 ];
 
 export function AppSidebar() {
@@ -83,6 +97,41 @@ export function AppSidebar() {
                                 : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
                               }
                           `}
+                          >
+                            <item.icon className={`h-5 w-5 ${active ? 'text-sidebar-primary' : ''}`} />
+                            {open && <span>{item.title}</span>}
+                            {open && active && <ChevronRight className="ml-auto h-4 w-4" />}
+                          </NavLink>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          <SidebarGroup className="mt-4">
+            <SidebarGroupLabel className="text-sidebar-foreground/70 uppercase text-xs font-semibold px-3">
+              Accounts & Finance
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {accountsItems
+                  .filter(item => !item.allowedRoles || hasRole(item.allowedRoles))
+                  .map((item) => {
+                    const active = isActive(item.url);
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton asChild>
+                          <NavLink
+                            to={item.url}
+                            className={`
+                          flex items-center gap-3 px-3 py-2 rounded-md transition-all
+                          ${active
+                                ? 'bg-sidebar-accent text-sidebar-primary font-semibold'
+                                : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                              }
+                        `}
                           >
                             <item.icon className={`h-5 w-5 ${active ? 'text-sidebar-primary' : ''}`} />
                             {open && <span>{item.title}</span>}

@@ -23,6 +23,12 @@ import Staffs from "./pages/Staffs";
 import MemberPortal from "./pages/MemberPortal";
 import TrainerPortal from "./pages/TrainerPortal";
 import GymSettings from "./pages/GymSettings";
+import Accounts from "./pages/Accounts";
+import Expenses from "./pages/Expenses";
+import AccountLedger from "./pages/AccountLedger";
+import ReportAccountSummary from "./pages/ReportAccountSummary";
+import ReportExpenses from "./pages/ReportExpenses";
+import ReportIncomeExpense from "./pages/ReportIncomeExpense";
 import NotFound from "./pages/NotFound";
 import { UserRole } from "./models/enums/Gender";
 
@@ -174,6 +180,66 @@ const App = () => (
                 <ProtectedRoute requiredRoles={[UserRole.Admin]}>
                   <DashboardLayout>
                     <GymSettings />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/accounts"
+              element={
+                <ProtectedRoute requiredRoles={[UserRole.Admin, UserRole.Staff]}>
+                  <DashboardLayout>
+                    <Accounts />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/expenses"
+              element={
+                <ProtectedRoute requiredRoles={[UserRole.Admin, UserRole.Staff]}>
+                  <DashboardLayout>
+                    <Expenses />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/account-ledger"
+              element={
+                <ProtectedRoute requiredRoles={[UserRole.Admin, UserRole.Staff]}>
+                  <DashboardLayout>
+                    <AccountLedger />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports/account-summary"
+              element={
+                <ProtectedRoute requiredRoles={[UserRole.Admin, UserRole.Staff]}>
+                  <DashboardLayout>
+                    <ReportAccountSummary />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports/expenses"
+              element={
+                <ProtectedRoute requiredRoles={[UserRole.Admin, UserRole.Staff]}>
+                  <DashboardLayout>
+                    <ReportExpenses />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports/income-expense"
+              element={
+                <ProtectedRoute requiredRoles={[UserRole.Admin, UserRole.Staff]}>
+                  <DashboardLayout>
+                    <ReportIncomeExpense />
                   </DashboardLayout>
                 </ProtectedRoute>
               }

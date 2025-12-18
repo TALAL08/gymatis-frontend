@@ -1,0 +1,213 @@
+================================================================================
+ACCOUNTS MODULE - DATABASE TABLE STRUCTURES
+================================================================================
+
+1. ACCOUNTS TABLE
+--------------------------------------------------------------------------------
+Table Name: accounts
+
+| Column Name      | Data Type      | Nullable | Default            | Description                              |
+|------------------|----------------|----------|---------------------|------------------------------------------|
+| id               | UUID           | No       | gen_random_uuid()   | Primary Key                              |
+| gym_id           | UUID           | No       | -                   | Foreign Key to gyms table                |
+| account_name     | VARCHAR(100)   | No       | -                   | Name of the account                      |
+| account_type     | ENUM           | No       | -                   | 'bank' or 'cash'                         |
+| bank_name        | VARCHAR(100)   | Yes      | NULL                | Bank name (only for bank accounts)       |
+| opening_balance  | DECIMAL(12,2)  | No       | 0.00                | Initial balance (read-only after create) |
+| current_balance  | DECIMAL(12,2)  | No       | 0.00                | Current balance                          |
+| is_default       | BOOLEAN        | No       | false               | True for system default Cash Account     |
+| is_active        | BOOLEAN        | No       | true                | Account status (Active/Inactive)         |
+| created_at       | TIMESTAMPTZ    | No       | now()               | Record creation timestamp                |
+| updated_at       | TIMESTAMPTZ    | No       | now()               | Record update timestamp                  |
+
+Indexes:
+- PRIMARY KEY (id)
+- INDEX idx_accounts_gym_id (gym_id)
+- UNIQUE idx_accounts_name_gym (account_name, gym_id)
+
+Constraints:
+- FOREIGN KEY (gym_id) REFERENCES gyms(id) ON DELETE CASCADE
+- CHECK (account_type IN ('bank', 'cash'))
+- CHECK (opening_balance >= 0)
+
+Notes:
+- Each gym has one default Cash Account that cannot be deleted
+- Bank accounts require bank_name to be populated
+- opening_balance becomes read-only after account creation
+
+--------------------------------------------------------------------------------
+
+2. EXPENSE_CATEGORIES TABLE
+--------------------------------------------------------------------------------
+Table Name: expense_categories
+
+| Column Name   | Data Type      | Nullable | Default            | Description                    |
+|---------------|----------------|----------|---------------------|--------------------------------|
+| id            | UUID           | No       | gen_random_uuid()   | Primary Key                    |
+| gym_id        | UUID           | No       | -                   | Foreign Key to gyms table      |
+| name          | VARCHAR(100)   | No       | -                   | Category name                  |
+| description   | TEXT           | Yes      | NULL                | Category description           |
+| is_active     | BOOLEAN        | No       | true                | Category status                |
+| created_at    | TIMESTAMPTZ    | No       | now()               | Record creation timestamp      |
+| updated_at    | TIMESTAMPTZ    | No       | now()               | Record update timestamp        |
+
+Indexes:
+- PRIMARY KEY (id)
+- INDEX idx_expense_categories_gym_id (gym_id)
+- UNIQUE idx_expense_categories_name_gym (name, gym_id)
+
+Constraints:
+- FOREIGN KEY (gym_id) REFERENCES gyms(id) ON DELETE CASCADE
+
+Notes:
+- Default categories can be seeded: Utilities, Rent, Equipment, Salaries, Maintenance, Marketing, Supplies, Other
+
+--------------------------------------------------------------------------------
+
+3. EXPENSES TABLE
+--------------------------------------------------------------------------------
+Table Name: expenses
+
+| Column Name      | Data Type      | Nullable | Default            | Description                    |
+|------------------|----------------|----------|---------------------|--------------------------------|
+| id               | UUID           | No       | gen_random_uuid()   | Primary Key                    |
+| gym_id           | UUID           | No       | -                   | Foreign Key to gyms table      |
+| expense_date     | DATE           | No       | -                   | Date of expense                |
+| category_id      | UUID           | No       | -                   | Foreign Key to expense_categories |
+| description      | TEXT           | Yes      | NULL                | Expense description/notes      |
+| amount           | DECIMAL(12,2)  | No       | -                   | Expense amount                 |
+| account_id       | UUID           | No       | -                   | Foreign Key to accounts (paid from) |
+| reference_number | VARCHAR(100)   | Yes      | NULL                | Reference/receipt number       |
+| created_by       | UUID           | Yes      | -                   | User who created the expense   |
+| created_at       | TIMESTAMPTZ    | No       | now()               | Record creation timestamp      |
+| updated_at       | TIMESTAMPTZ    | No       | now()               | Record update timestamp        |
+
+Indexes:
+- PRIMARY KEY (id)
+- INDEX idx_expenses_gym_id (gym_id)
+- INDEX idx_expenses_date (expense_date)
+- INDEX idx_expenses_category (category_id)
+- INDEX idx_expenses_account (account_id)
+
+Constraints:
+- FOREIGN KEY (gym_id) REFERENCES gyms(id) ON DELETE CASCADE
+- FOREIGN KEY (category_id) REFERENCES expense_categories(id)
+- FOREIGN KEY (account_id) REFERENCES accounts(id)
+- CHECK (amount > 0)
+
+--------------------------------------------------------------------------------
+
+4. ACCOUNT_TRANSACTIONS TABLE (Ledger)
+--------------------------------------------------------------------------------
+Table Name: account_transactions
+
+| Column Name      | Data Type      | Nullable | Default            | Description                         |
+|------------------|----------------|----------|---------------------|-------------------------------------|
+| id               | UUID           | No       | gen_random_uuid()   | Primary Key                         |
+| gym_id           | UUID           | No       | -                   | Foreign Key to gyms table           |
+| account_id       | UUID           | No       | -                   | Foreign Key to accounts             |
+| transaction_date | TIMESTAMPTZ    | No       | now()               | Transaction date/time               |
+| reference_type   | ENUM           | No       | -                   | 'fee', 'expense', 'adjustment'      |
+| reference_id     | UUID           | Yes      | NULL                | ID of related transaction/expense   |
+| reference_no     | VARCHAR(100)   | Yes      | NULL                | Reference number                    |
+| description      | TEXT           | Yes      | NULL                | Transaction description             |
+| debit            | DECIMAL(12,2)  | No       | 0.00                | Debit amount (money out)            |
+| credit           | DECIMAL(12,2)  | No       | 0.00                | Credit amount (money in)            |
+| balance          | DECIMAL(12,2)  | No       | -                   | Running balance after transaction   |
+| created_at       | TIMESTAMPTZ    | No       | now()               | Record creation timestamp           |
+
+Indexes:
+- PRIMARY KEY (id)
+- INDEX idx_account_transactions_gym_id (gym_id)
+- INDEX idx_account_transactions_account (account_id)
+- INDEX idx_account_transactions_date (transaction_date)
+- INDEX idx_account_transactions_ref_type (reference_type)
+
+Constraints:
+- FOREIGN KEY (gym_id) REFERENCES gyms(id) ON DELETE CASCADE
+- FOREIGN KEY (account_id) REFERENCES accounts(id)
+- CHECK (reference_type IN ('fee', 'expense', 'adjustment'))
+- CHECK (debit >= 0 AND credit >= 0)
+- CHECK (NOT (debit > 0 AND credit > 0)) -- Only one can be > 0
+
+Notes:
+- For fee payments: credit column populated, debit = 0
+- For expenses: debit column populated, credit = 0
+- balance is the running balance after this transaction
+- reference_id links to transactions.id (for fees) or expenses.id (for expenses)
+
+--------------------------------------------------------------------------------
+
+5. UPDATES TO EXISTING TRANSACTIONS TABLE
+--------------------------------------------------------------------------------
+Add new column to existing 'transactions' table:
+
+| Column Name | Data Type | Nullable | Default | Description                    |
+|-------------|-----------|----------|---------|--------------------------------|
+| account_id  | UUID      | Yes      | NULL    | Foreign Key to accounts        |
+
+Constraints:
+- FOREIGN KEY (account_id) REFERENCES accounts(id)
+
+Notes:
+- When a payment is recorded, account_id stores which account received the payment
+- For cash payments, auto-select the default Cash Account
+- For bank/transfer payments, user selects a Bank Account
+
+================================================================================
+ENUM TYPES
+================================================================================
+
+1. account_type ENUM
+   Values: 'bank', 'cash'
+
+2. reference_type ENUM (for account_transactions)
+   Values: 'fee', 'expense', 'adjustment'
+
+================================================================================
+ROW LEVEL SECURITY (RLS) POLICIES - RECOMMENDATIONS
+================================================================================
+
+All tables should have RLS enabled with policies like:
+
+accounts:
+- SELECT: gym_id = get_user_gym_id(auth.uid())
+- INSERT: gym_id = get_user_gym_id(auth.uid()) AND has_role(auth.uid(), 'gym_admin')
+- UPDATE: gym_id = get_user_gym_id(auth.uid()) AND has_role(auth.uid(), 'gym_admin')
+- DELETE: gym_id = get_user_gym_id(auth.uid()) AND has_role(auth.uid(), 'gym_admin') AND is_default = false
+
+expense_categories:
+- SELECT: gym_id = get_user_gym_id(auth.uid())
+- INSERT/UPDATE/DELETE: gym_id = get_user_gym_id(auth.uid()) AND has_role(auth.uid(), 'gym_admin')
+
+expenses:
+- SELECT: gym_id = get_user_gym_id(auth.uid())
+- INSERT: gym_id = get_user_gym_id(auth.uid()) AND (has_role('gym_admin') OR has_role('staff'))
+- UPDATE/DELETE: gym_id = get_user_gym_id(auth.uid()) AND has_role(auth.uid(), 'gym_admin')
+
+account_transactions:
+- SELECT: gym_id = get_user_gym_id(auth.uid())
+- INSERT: gym_id = get_user_gym_id(auth.uid()) AND (has_role('gym_admin') OR has_role('staff'))
+- No UPDATE/DELETE allowed (audit trail)
+
+================================================================================
+TRIGGERS / FUNCTIONS - RECOMMENDATIONS
+================================================================================
+
+1. update_account_balance()
+   - Trigger on account_transactions INSERT
+   - Updates accounts.current_balance based on debit/credit
+
+2. create_default_cash_account()
+   - Trigger on gyms INSERT
+   - Creates default Cash Account for new gym
+
+3. seed_default_expense_categories()
+   - Trigger on gyms INSERT
+   - Creates default expense categories for new gym
+
+4. calculate_running_balance()
+   - Function to calculate balance for new transaction
+   - Called before INSERT on account_transactions
+
+================================================================================
