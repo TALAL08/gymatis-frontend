@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Download, FileText, Receipt, ChevronDown, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ExpenseService } from '@/services/expenseService';
+import { ExpenseCategoryService } from '@/services/expenseCategoryService';
 import { AccountService } from '@/services/accountService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,24 +37,25 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { parseNullableInt } from '@/lib/utils';
 
 export default function ReportExpenses() {
   const { gymId } = useAuth();
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [accountId, setAccountId] = useState('');
+  const [categoryId, setCategoryId] = useState('0');
+  const [accountId, setAccountId] = useState('0');
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   const { data, isLoading } = useQuery({
     queryKey: ['expense-report', gymId, startDate, endDate, categoryId, accountId],
-    queryFn: () => ExpenseService.getExpenseReport(gymId, startDate, endDate, categoryId, accountId),
+    queryFn: () => ExpenseService.getExpenseReport(gymId, startDate, endDate, categoryId == "0" ? null : parseInt(categoryId), accountId == "0" ? null : parseInt(accountId)),
     enabled: !!gymId,
   });
 
   const { data: categories } = useQuery({
     queryKey: ['expense-categories', gymId],
-    queryFn: () => ExpenseService.getActiveCategories(gymId),
+    queryFn: () => ExpenseCategoryService.getActiveCategories(gymId as number),
     enabled: !!gymId,
   });
 
@@ -86,7 +88,7 @@ export default function ReportExpenses() {
 
   const handleExportCsv = async () => {
     try {
-      const blob = await ExpenseService.exportExpenseReportCsv(gymId, startDate, endDate, categoryId, accountId);
+      const blob = await ExpenseService.exportExpenseReportCsv(gymId, startDate, endDate, parseNullableInt(categoryId),  parseNullableInt(accountId));
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -101,7 +103,7 @@ export default function ReportExpenses() {
 
   const handleExportPdf = async () => {
     try {
-      const blob = await ExpenseService.exportExpenseReportPdf(gymId, startDate, endDate, categoryId, accountId);
+      const blob = await ExpenseService.exportExpenseReportPdf(gymId, startDate, endDate, parseNullableInt(categoryId),  parseNullableInt(accountId));
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -117,13 +119,13 @@ export default function ReportExpenses() {
   const clearFilters = () => {
     setStartDate('');
     setEndDate('');
-    setCategoryId('');
-    setAccountId('');
+    setCategoryId('0');
+    setAccountId('0');
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+  <div className="container mx-auto px-4 py-8 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in-up">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Expense Report</h1>
           <p className="text-muted-foreground">Detailed breakdown of expenses by category</p>
@@ -149,7 +151,7 @@ export default function ReportExpenses() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 animate-slide-in">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
@@ -170,7 +172,7 @@ export default function ReportExpenses() {
         </Card>
       </div>
 
-      <Card>
+      <Card className="animate-slide-in">
         <CardHeader className="pb-4">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row gap-4">
@@ -195,7 +197,7 @@ export default function ReportExpenses() {
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="0">All Categories</SelectItem>
                   {categories?.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.name}
@@ -208,7 +210,7 @@ export default function ReportExpenses() {
                   <SelectValue placeholder="All Accounts" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Accounts</SelectItem>
+                  <SelectItem value="0">All Accounts</SelectItem>
                   {accounts?.map((acc) => (
                     <SelectItem key={acc.id} value={acc.id}>
                       {acc.accountName}

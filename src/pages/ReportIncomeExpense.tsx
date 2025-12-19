@@ -98,8 +98,8 @@ export default function ReportIncomeExpense() {
   const isProfit = netProfitLoss >= 0;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+  <div className="container mx-auto px-4 py-8 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in-up">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Income vs Expense Report</h1>
           <p className="text-muted-foreground">Compare your income and expenses over time</p>
@@ -125,7 +125,7 @@ export default function ReportIncomeExpense() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3 animate-slide-in">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Income</CardTitle>
@@ -176,7 +176,7 @@ export default function ReportIncomeExpense() {
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="animate-slide-in">
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <Input
@@ -198,7 +198,7 @@ export default function ReportIncomeExpense() {
       </Card>
 
       {/* Charts */}
-      <div className="grid gap-6 md:grid-cols-1">
+      <div className="grid gap-6 md:grid-cols-1 animate-slide-in">
         <Card>
           <CardHeader>
             <CardTitle>Income vs Expense Comparison</CardTitle>

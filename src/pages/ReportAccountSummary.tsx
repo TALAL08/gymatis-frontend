@@ -22,7 +22,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
 
 export default function ReportAccountSummary() {
   const { gymId } = useAuth();
@@ -57,8 +56,8 @@ export default function ReportAccountSummary() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+  <div className="container mx-auto px-4 py-8 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in-up">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Account Summary Report</h1>
           <p className="text-muted-foreground">Overview of all accounts with balances</p>
@@ -84,8 +83,8 @@ export default function ReportAccountSummary() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
+      <div className="grid gap-4 md:grid-cols-4 animate-slide-in">
+    <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Opening</CardTitle>
             <Wallet className="h-4 w-4 text-muted-foreground" />
@@ -123,7 +122,7 @@ export default function ReportAccountSummary() {
         </Card>
       </div>
 
-      <Card>
+    <Card className="animate-slide-in">
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <Input

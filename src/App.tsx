@@ -14,6 +14,8 @@ import MemberCard from "./pages/MemberCard";
 import Packages from "./pages/Packages";
 import Subscriptions from "./pages/Subscriptions";
 import Trainers from "./pages/Trainers";
+import TrainerDetail from "./pages/TrainerDetail";
+import TrainerSalarySlips from "./pages/TrainerSalarySlips";
 import Attendance from "./pages/Attendance";
 import Invoices from "./pages/Invoices";
 import Reports from "./pages/Reports";
@@ -25,6 +27,7 @@ import TrainerPortal from "./pages/TrainerPortal";
 import GymSettings from "./pages/GymSettings";
 import Accounts from "./pages/Accounts";
 import Expenses from "./pages/Expenses";
+import ExpenseCategories from "./pages/ExpenseCategories";
 import AccountLedger from "./pages/AccountLedger";
 import ReportAccountSummary from "./pages/ReportAccountSummary";
 import ReportExpenses from "./pages/ReportExpenses";
@@ -115,6 +118,26 @@ const App = () => (
               }
             />
             <Route
+              path="/trainers/:id"
+              element={
+                <ProtectedRoute requiredRoles={[UserRole.Admin, UserRole.Staff]}>
+                  <DashboardLayout>
+                    <TrainerDetail />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/trainer-salary-slips"
+              element={
+                <ProtectedRoute requiredRoles={[UserRole.Admin, UserRole.Staff]}>
+                  <DashboardLayout>
+                    <TrainerSalarySlips />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/attendance"
               element={
                 <ProtectedRoute requiredRoles={[UserRole.Admin, UserRole.Staff]}>
@@ -200,6 +223,16 @@ const App = () => (
                 <ProtectedRoute requiredRoles={[UserRole.Admin, UserRole.Staff]}>
                   <DashboardLayout>
                     <Expenses />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/expense-categories"
+              element={
+                <ProtectedRoute requiredRoles={[UserRole.Admin, UserRole.Staff]}>
+                  <DashboardLayout>
+                    <ExpenseCategories />
                   </DashboardLayout>
                 </ProtectedRoute>
               }

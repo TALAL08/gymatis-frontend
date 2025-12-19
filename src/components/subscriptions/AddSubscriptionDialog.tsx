@@ -90,7 +90,7 @@ export function AddSubscriptionDialog({ open, onOpenChange, onSuccess }: AddSubs
     queryKey: ['packages', gymId],
     queryFn: async () => {
       if (!gymId) return [];
-      return await PackageService.getPackagesByGym(gymId);
+      return await PackageService.getActivePackages(gymId);
     },
     enabled: !!gymId && open,
   });
@@ -127,7 +127,7 @@ export function AddSubscriptionDialog({ open, onOpenChange, onSuccess }: AddSubs
     try {
       const startDate = new Date(values.startDate);
       const endDate = addDays(startDate, selectedPackage.durationDays);
-      const pricePaid = parseFloat(values.pricePaid)-selectedTrainer.monthlyAddonPrice;
+      const pricePaid = parseFloat(values.pricePaid) - (selectedTrainer ? selectedTrainer.monthlyAddonPrice : 0);
 
       // Create subscription
       const subscription = await SubscriptionService.createSubscription({

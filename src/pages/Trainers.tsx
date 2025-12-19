@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { TrainerService } from "@/services/trainerService";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -9,12 +10,13 @@ import { Badge } from "@/components/ui/badge";
 import { AddTrainerDialog } from "@/components/trainers/AddTrainerDialog";
 import { EditTrainerDialog } from "@/components/trainers/EditTrainerDialog";
 import { DeleteTrainerDialog } from "@/components/trainers/DeleteTrainerDialog";
-import { Plus, Search, Edit, Trash2, UserCircle } from "lucide-react";
+import { Plus, Search, Edit, Trash2, UserCircle, Eye } from "lucide-react";
 import { usePagination } from "@/hooks/use-pagination";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
 import { useDebounce } from "@/hooks/use-debounce";
 
 export default function Trainers() {
+  const navigate = useNavigate();
   const { gymId, isAdmin } = useAuth();
   const [localSearch, setLocalSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
@@ -175,28 +177,35 @@ export default function Trainers() {
                         {trainer.phone && <p className="text-sm text-muted-foreground">📞 {trainer.phone}</p>}
                         {trainer.email && <p className="text-sm text-muted-foreground">✉️ {trainer.email}</p>}
                       </div>
-                      {isAdmin && (
-                        <div className="flex gap-2 pt-4">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1"
-                            onClick={() => handleEdit(trainer)}
-                          >
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            className="flex-1"
-                            onClick={() => handleDelete(trainer)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </Button>
-                        </div>
-                      )}
+                      <div className="flex gap-2 pt-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => navigate(`/trainers/${trainer.id}`)}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View
+                        </Button>
+                        {isAdmin && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEdit(trainer)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDelete(trainer)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </Card>

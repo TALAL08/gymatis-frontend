@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { ExpenseCategoryService } from '@/services/expenseCategoryService';
 
 const formSchema = z.object({
   expenseDate: z.string().min(1, 'Date is required'),
@@ -36,7 +37,7 @@ export function AddExpenseDialog({ open, onOpenChange, onSuccess }: AddExpenseDi
 
   const { data: categories } = useQuery({
     queryKey: ['expense-categories', gymId],
-    queryFn: () => ExpenseService.getActiveCategories(gymId!),
+    queryFn: () => ExpenseCategoryService.getActiveCategories(gymId!),
     enabled: !!gymId && open,
   });
 
@@ -97,9 +98,22 @@ export function AddExpenseDialog({ open, onOpenChange, onSuccess }: AddExpenseDi
             <FormField control={form.control} name="accountId" render={({ field }) => (
               <FormItem><FormLabel>Paid From Account *</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Select account" /></SelectTrigger></FormControl>
-                  <SelectContent>{accounts?.map((acc) => <SelectItem key={acc.id} value={acc.id}>{acc.accountName}</SelectItem>)}</SelectContent>
-                </Select><FormMessage />
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select account" />
+                    </SelectTrigger>
+                  </FormControl>
+
+                  <SelectContent>
+                    {accounts?.map((acc) => (
+                      <SelectItem key={acc.id} value={String(acc.id)}>
+                        {acc.accountName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="description" render={({ field }) => (

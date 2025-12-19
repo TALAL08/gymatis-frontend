@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { TransactionService } from '@/services/transactionService';
+import { AccountService } from '@/services/accountService';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -34,6 +35,7 @@ import { format } from 'date-fns';
 import { PaymentMethod } from '@/models/enums/PaymentMethod';
 import { Invoice } from '@/models/interfaces/Invoice';
 import { InvoiceStatus } from '@/models/enums/InvoiceStatus';
+import { Account } from '@/models/interfaces/Account';
 
 const formSchema = z.object({
   amount: z.coerce.number().min(1, 'Amount is required').refine(
@@ -41,6 +43,7 @@ const formSchema = z.object({
     'Amount must be a positive number'
   ),
   paymentMethod: z.nativeEnum(PaymentMethod),
+  accountId: z.string().min(1, 'Account is required'),
   paymentDate: z.string().min(1, 'Payment date is required'),
   referenceNumber: z.string().optional(),
   notes: z.string().optional(),
@@ -56,17 +59,41 @@ interface PaymentDialogProps {
 export function PaymentDialog({ open, onOpenChange, invoice, onSuccess }: PaymentDialogProps) {
   const { gymId } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [loadingAccounts, setLoadingAccounts] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       amount: invoice.netAmount,
       paymentMethod: PaymentMethod.Cash,
+      accountId: '',
       paymentDate: format(new Date(), 'yyyy-MM-dd'),
       referenceNumber: '',
       notes: '',
     },
   });
+
+  // Fetch accounts when dialog opens
+  useEffect(() => {
+    const fetchAccounts = async () => {
+      if (!gymId || !open) return;
+      setLoadingAccounts(true);
+      try {
+        const data = await AccountService.getActiveAccounts(Number(gymId));
+        setAccounts(data);
+        // Auto-select first account if available
+        if (data.length > 0 && !form.getValues('accountId')) {
+          form.setValue('accountId', String(data[0].id));
+        }
+      } catch (error) {
+        console.error('Failed to fetch accounts:', error);
+      } finally {
+        setLoadingAccounts(false);
+      }
+    };
+    fetchAccounts();
+  }, [gymId, open]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
@@ -80,6 +107,7 @@ export function PaymentDialog({ open, onOpenChange, invoice, onSuccess }: Paymen
         invoiceId: invoice.id,
         amount: paymentAmount,
         paymentMethod: values.paymentMethod,
+        accountId: parseInt(values.accountId),
         paidAt: values.paymentDate,
         referenceNumber: values.referenceNumber || null,
         notes: values.notes || null,
@@ -168,6 +196,34 @@ export function PaymentDialog({ open, onOpenChange, invoice, onSuccess }: Paymen
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="accountId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Account *</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={loadingAccounts}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={loadingAccounts ? "Loading accounts..." : "Select account"} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {accounts.map((account) => (
+                        <SelectItem key={account.id} value={String(account.id)}>
+                          {account.accountName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}

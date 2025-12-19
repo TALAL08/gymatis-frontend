@@ -10,7 +10,7 @@ import { useDebounce } from '@/hooks/use-debounce';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -36,9 +36,10 @@ import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import { AddExpenseDialog } from '@/components/expenses/AddExpenseDialog';
 import { EditExpenseDialog } from '@/components/expenses/EditExpenseDialog';
 import { DeleteExpenseDialog } from '@/components/expenses/DeleteExpenseDialog';
-import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { parseNullableInt } from '@/lib/utils';
+import { ExpenseCategoryService } from '@/services/expenseCategoryService';
 
 export default function Expenses() {
   const { gymId } = useAuth();
@@ -54,8 +55,8 @@ export default function Expenses() {
   // Filters
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [categoryId, setCategoryId] = useState<string>('');
-  const [accountId, setAccountId] = useState<string>('');
+  const [categoryId, setCategoryId] = useState<string>('0');
+  const [accountId, setAccountId] = useState<string>('0');
 
 
   useEffect(() => {
@@ -63,7 +64,7 @@ export default function Expenses() {
   }, [debouncedSearch, setSearchText]);
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['expenses', gymId, pageNo, pageSize, searchText, startDate, endDate, categoryId, accountId],
+    queryKey: ['expenses', gymId, pageNo, pageSize, searchText, startDate, endDate, parseNullableInt(categoryId), parseNullableInt(accountId)],
     queryFn: () =>
       ExpenseService.getExpensesByGymPaginated(gymId, {
         pageNo,
@@ -71,15 +72,15 @@ export default function Expenses() {
         searchText,
         startDate,
         endDate,
-        categoryId,
-        accountId,
+        categoryId: parseNullableInt(categoryId),
+        accountId: parseNullableInt(accountId),
       }),
     enabled: !!gymId,
   });
 
   const { data: categories } = useQuery({
     queryKey: ['expense-categories', gymId],
-    queryFn: () => ExpenseService.getActiveCategories(gymId),
+    queryFn: () => ExpenseCategoryService.getActiveCategories(gymId),
     enabled: !!gymId,
   });
 
@@ -102,7 +103,7 @@ export default function Expenses() {
 
   const handleExportCsv = async () => {
     try {
-      const blob = await ExpenseService.exportExpenseReportCsv(gymId, startDate, endDate, categoryId, accountId);
+      const blob = await ExpenseService.exportExpenseReportCsv(gymId, startDate, endDate, parseNullableInt(categoryId), parseNullableInt(accountId));
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -117,7 +118,7 @@ export default function Expenses() {
 
   const handleExportPdf = async () => {
     try {
-      const blob = await ExpenseService.exportExpenseReportPdf(gymId, startDate, endDate, categoryId, accountId);
+      const blob = await ExpenseService.exportExpenseReportPdf(gymId, startDate, endDate, parseNullableInt(categoryId), parseNullableInt(accountId));
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -214,7 +215,7 @@ return (
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
+              <SelectItem value="0">All Categories</SelectItem>
               {categories?.map((cat) => (
                 <SelectItem key={cat.id} value={String(cat.id)}>
                   {cat.name}
@@ -228,7 +229,7 @@ return (
               <SelectValue placeholder="All Accounts" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Accounts</SelectItem>
+              <SelectItem value="0">All Accounts</SelectItem>
               {accounts?.map((acc) => (
                 <SelectItem key={acc.id} value={String(acc.id)}>
                   {acc.accountName}

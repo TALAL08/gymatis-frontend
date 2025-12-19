@@ -8,6 +8,7 @@ export interface TransactionCreate {
 
   amount: number;
   paymentMethod: PaymentMethod;
+  accountId:number;
   referenceNumber?: string;
   notes?: string;
 

@@ -36,3 +36,11 @@ export const getDefaultTimezone = (): string => {
     return '';
   }
 };
+
+export const parseNullableInt = (value: string): number | null => {
+
+  if (value)
+    return parseInt(value);
+  return null;
+
+}

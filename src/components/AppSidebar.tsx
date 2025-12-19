@@ -15,6 +15,7 @@ import {
   BookOpen,
   PieChart,
   TrendingUp,
+  Tags,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -38,6 +39,7 @@ const mainItems = [
   { title: "Packages", url: "/packages", icon: Package, allowedRoles: [UserRole.Admin, UserRole.Staff] },
   { title: "Subscriptions", url: "/subscriptions", icon: CreditCard, allowedRoles: [UserRole.Admin, UserRole.Staff] },
   { title: "Trainers", url: "/trainers", icon: Dumbbell, allowedRoles: [UserRole.Admin, UserRole.Staff] },
+  { title: "Trainer Salaries", url: "/trainer-salary-slips", icon: Receipt, allowedRoles: [UserRole.Admin, UserRole.Staff] },
   { title: "Attendance", url: "/attendance", icon: ClipboardCheck, allowedRoles: [UserRole.Admin, UserRole.Staff] },
   { title: "Invoices", url: "/invoices", icon: Receipt, allowedRoles: [UserRole.Admin, UserRole.Staff] },
   { title: "Staff", url: "/staff", icon: UserCog, allowedRoles: [UserRole.Admin] },
@@ -47,6 +49,7 @@ const mainItems = [
 const accountsItems = [
   { title: "Accounts", url: "/accounts", icon: Wallet, allowedRoles: [UserRole.Admin, UserRole.Staff] },
   { title: "Expenses", url: "/expenses", icon: BadgeDollarSign, allowedRoles: [UserRole.Admin, UserRole.Staff] },
+  { title: "Expense Categories", url: "/expense-categories", icon: Tags, allowedRoles: [UserRole.Admin, UserRole.Staff] },
   { title: "Account Ledger", url: "/account-ledger", icon: BookOpen, allowedRoles: [UserRole.Admin, UserRole.Staff] },
 ];
 

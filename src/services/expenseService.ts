@@ -11,42 +11,6 @@ import { PaginatedResponse, PaginationParams } from '@/models/interfaces/Paginat
 import axiosClient from '@/utils/axios-client';
 
 export class ExpenseService {
-  // ==================== EXPENSE CATEGORIES ====================
-
-  /**
-   * Get all expense categories for a gym
-   */
-  static async getCategoriesByGym(gymId: string): Promise<ExpenseCategory[]> {
-    const res = await axiosClient.get(`/expense-categories/gym/${gymId}`);
-    return res.data as ExpenseCategory[];
-  }
-  static async getActiveCategories(gymId: number): Promise<ExpenseCategory[]> {
-    const response = await axiosClient.get(`/expenses/categories/active/${gymId}`);
-    return response.data;
-  }
-
-  /**
-   * Create a new expense category
-   */
-  static async createCategory(data: ExpenseCategoryCreateRequest): Promise<ExpenseCategory> {
-    const res = await axiosClient.post('/expense-categories', data);
-    return res.data as ExpenseCategory;
-  }
-
-  /**
-   * Update an expense category
-   */
-  static async updateCategory(id: string, data: ExpenseCategoryUpdateRequest): Promise<ExpenseCategory> {
-    const res = await axiosClient.patch(`/expense-categories/${id}`, data);
-    return res.data as ExpenseCategory;
-  }
-
-  /**
-   * Delete an expense category
-   */
-  static async deleteCategory(id: string): Promise<void> {
-    await axiosClient.delete(`/expense-categories/${id}`);
-  }
 
   // ==================== EXPENSES ====================
 
@@ -58,8 +22,8 @@ export class ExpenseService {
     params: PaginationParams & {
       startDate?: string;
       endDate?: string;
-      categoryId?: string;
-      accountId?: string;
+      categoryId?: number;
+      accountId?: number;
     }
   ): Promise<PaginatedResponse<Expense>> {
     const res = await axiosClient.get(`/expenses/gym/${gymId}`, {
@@ -115,8 +79,8 @@ export class ExpenseService {
     gymId: number,
     startDate?: string,
     endDate?: string,
-    categoryId?: string,
-    accountId?: string
+    categoryId?: number,
+    accountId?: number
   ): Promise<ExpenseReportItem[]> {
     const res = await axiosClient.get(`/expenses/gym/${gymId}/report`, {
       params: { startDate, endDate, categoryId, accountId },
@@ -145,8 +109,8 @@ export class ExpenseService {
     gymId: number,
     startDate?: string,
     endDate?: string,
-    categoryId?: string,
-    accountId?: string
+    categoryId?: number,
+    accountId?: number
   ): Promise<Blob> {
     const res = await axiosClient.get(`/expenses/gym/${gymId}/export/csv`, {
       params: { startDate, endDate, categoryId, accountId },
@@ -162,8 +126,8 @@ export class ExpenseService {
     gymId: number,
     startDate?: string,
     endDate?: string,
-    categoryId?: string,
-    accountId?: string
+    categoryId?: number,
+    accountId?: number
   ): Promise<Blob> {
     const res = await axiosClient.get(`/expenses/gym/${gymId}/export/pdf`, {
       params: { startDate, endDate, categoryId, accountId },
