@@ -3,6 +3,7 @@ import { TrainerUpdateRequest } from "@/models/interfaces/requests/TrainerUpdate
 import { Trainer } from "@/models/interfaces/Trainer";
 import { PaginatedResponse, PaginationParams } from "@/models/interfaces/PaginatedResponse";
 import axiosClient from "@/utils/axios-client";
+import { TrainerSalaryConfig, TrainerSalaryConfigCreateRequest, TrainerSalaryConfigUpdateRequest } from "@/models/interfaces/TrainerSalaryConfig";
 
 export class TrainerService {
   static async getTrainersByGymPaginated(
@@ -73,4 +74,27 @@ export class TrainerService {
     const res = await axiosClient.patch(`/trainers/${id}/status`, { isActive });
     return res.data;
   }
+
+  static async getActiveMemberCount(trainerId: number, month: number, year: number): Promise<number> {
+    const res = await axiosClient.get<{ count: number }>(`/trainers/${trainerId}/active-members-count`, {
+      params: { month, year },
+    });
+    return res.data.count;
+  }  
+
+  // Salary Configuration APIs
+  static async getSalaryConfig(trainerId: number): Promise<TrainerSalaryConfig | null> {
+    const res = await axiosClient.get<TrainerSalaryConfig>(`/trainers/${trainerId}/salary-config`);
+    return res.data;
+  }
+
+  static async createSalaryConfig(payload: TrainerSalaryConfigCreateRequest): Promise<TrainerSalaryConfig> {
+    const res = await axiosClient.post<TrainerSalaryConfig>(`/trainers/salary-config`, payload);
+    return res.data;
+  }
+
+  static async updateSalaryConfig(trainerId: number, payload: TrainerSalaryConfigUpdateRequest): Promise<TrainerSalaryConfig> {
+    const res = await axiosClient.put<TrainerSalaryConfig>(`/trainers/${trainerId}/salary-config`, payload);
+    return res.data;
+  }  
 }

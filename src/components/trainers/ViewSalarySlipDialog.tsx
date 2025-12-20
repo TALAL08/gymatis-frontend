@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { TrainerSalaryService } from "@/services/trainerSalaryService";
-import { SalarySlip } from "@/models/interfaces/SalarySlip";
+import { TrainerSalarySlip } from "@/models/interfaces/SalarySlip";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +28,7 @@ const MONTHS = [
 interface ViewSalarySlipDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  salarySlip: SalarySlip;
+  salarySlip: TrainerSalarySlip;
 }
 
 export function ViewSalarySlipDialog({ open, onOpenChange, salarySlip }: ViewSalarySlipDialogProps) {
@@ -42,7 +42,7 @@ export function ViewSalarySlipDialog({ open, onOpenChange, salarySlip }: ViewSal
     try {
       await TrainerSalaryService.markAsPaid(salarySlip.id);
       toast.success("Salary marked as paid");
-      queryClient.invalidateQueries({ queryKey: ["salary-slips"] });
+      queryClient.invalidateQueries({ queryKey: ["salaryslips"] });
       setShowConfirmDialog(false);
       onOpenChange(false);
     } catch (error: any) {
@@ -59,7 +59,7 @@ export function ViewSalarySlipDialog({ open, onOpenChange, salarySlip }: ViewSal
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `salary-slip-${salarySlip.trainer?.firstName}-${salarySlip.trainer?.lastName}-${MONTHS[salarySlip.salaryMonth - 1]}-${salarySlip.salaryYear}.pdf`;
+      a.download = `salary-slip-${salarySlip.trainer?.firstName}-${salarySlip.trainer?.lastName}-${MONTHS[salarySlip.month - 1]}-${salarySlip.year}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -93,7 +93,7 @@ export function ViewSalarySlipDialog({ open, onOpenChange, salarySlip }: ViewSal
                   {salarySlip.trainer?.firstName} {salarySlip.trainer?.lastName}
                 </h3>
                 <p className="text-muted-foreground">
-                  {MONTHS[salarySlip.salaryMonth - 1]} {salarySlip.salaryYear}
+                  {MONTHS[salarySlip.month - 1]} {salarySlip.year}
                 </p>
               </div>
               <Badge

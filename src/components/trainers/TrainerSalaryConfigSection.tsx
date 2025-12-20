@@ -4,7 +4,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { TrainerSalaryService } from "@/services/trainerSalaryService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -15,6 +14,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { toast } from "sonner";
 import { CalendarIcon, Loader2, DollarSign, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TrainerSalaryService } from "@/services/trainerSalaryService";
+import { TrainerService } from "@/services/trainerService";
 
 const formSchema = z.object({
   baseSalary: z.number().min(0, "Base salary must be positive"),
@@ -36,7 +37,7 @@ export function TrainerSalaryConfigSection({ trainerId }: TrainerSalaryConfigSec
 
   const { data: salaryConfig, isLoading: isLoadingConfig } = useQuery({
     queryKey: ["trainer-salary-config", trainerId],
-    queryFn: () => TrainerSalaryService.getSalaryConfig(trainerId),
+    queryFn: () => TrainerService.getSalaryConfig(trainerId),
     enabled: !!trainerId,
   });
 
@@ -65,7 +66,7 @@ export function TrainerSalaryConfigSection({ trainerId }: TrainerSalaryConfigSec
     setIsLoading(true);
     try {
       if (salaryConfig) {
-        await TrainerSalaryService.updateSalaryConfig(trainerId, {
+        await TrainerService.updateSalaryConfig(trainerId, {
           baseSalary: values.baseSalary,
           perMemberIncentive: values.perMemberIncentive,
           effectiveFrom: values.effectiveFrom.toISOString(),
@@ -73,7 +74,7 @@ export function TrainerSalaryConfigSection({ trainerId }: TrainerSalaryConfigSec
         });
         toast.success("Salary configuration updated");
       } else {
-        await TrainerSalaryService.createSalaryConfig({
+        await TrainerService.createSalaryConfig({
           trainerId,
           baseSalary: values.baseSalary,
           perMemberIncentive: values.perMemberIncentive,

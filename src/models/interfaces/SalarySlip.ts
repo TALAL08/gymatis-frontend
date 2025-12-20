@@ -2,12 +2,11 @@ import { Trainer } from "./Trainer";
 
 export type PaymentStatus = "unpaid" | "paid";
 
-export interface SalarySlip {
+export interface TrainerSalarySlip {
   id: number;
-  gymId: number;
   trainerId: number;
-  salaryMonth: number; // 1-12
-  salaryYear: number;
+  month: number; // 1-12
+  year: number;
   baseSalary: number;
   activeMemberCount: number;
   perMemberIncentive: number;
@@ -24,12 +23,11 @@ export interface SalarySlip {
 }
 
 export interface SalarySlipGenerateRequest {
-  trainerId: number;
   salaryMonth: number;
   salaryYear: number;
 }
 
-export interface SalarySlipSummary {
+export interface TrainerSalarySlipSummary {
   totalSalaryPayout: number;
   totalIncentives: number;
   totalBaseSalary: number;

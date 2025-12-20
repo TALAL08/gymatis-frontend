@@ -4,7 +4,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { TrainerService } from "@/services/trainerService";
-import { TrainerSalaryService } from "@/services/trainerSalaryService";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -14,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, AlertCircle, Calculator } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { TrainerSalaryService } from "@/services/trainerSalaryService";
 
 const MONTHS = [
   { value: 1, label: "January" },
@@ -93,8 +93,8 @@ export function GenerateSalarySlipDialog({ open, onOpenChange, preselectedTraine
       setPreviewLoading(true);
       try {
         const [salaryConfig, memberCount] = await Promise.all([
-          TrainerSalaryService.getSalaryConfig(parseInt(trainerId)),
-          TrainerSalaryService.getActiveMemberCount(parseInt(trainerId), parseInt(month), parseInt(year)),
+          TrainerService.getSalaryConfig(parseInt(trainerId)),
+          TrainerService.getActiveMemberCount(parseInt(trainerId), parseInt(month), parseInt(year)),
         ]);
 
         if (salaryConfig) {
@@ -132,8 +132,7 @@ export function GenerateSalarySlipDialog({ open, onOpenChange, preselectedTraine
 
     setIsLoading(true);
     try {
-      await TrainerSalaryService.generateSalarySlip(gymId, {
-        trainerId: parseInt(values.trainerId),
+      await TrainerSalaryService.generateSalarySlip(gymId,  parseInt(values.trainerId),{
         salaryMonth: parseInt(values.month),
         salaryYear: parseInt(values.year),
       });

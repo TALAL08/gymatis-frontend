@@ -6,7 +6,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { TrainerSalaryConfigSection } from "@/components/trainers/TrainerSalaryConfigSection";
 import { EditTrainerDialog } from "@/components/trainers/EditTrainerDialog";
 import { GenerateSalarySlipDialog } from "@/components/trainers/GenerateSalarySlipDialog";

@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { TrainerService } from "@/services/trainerService";
-import { TrainerSalaryService } from "@/services/trainerSalaryService";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,7 +23,8 @@ import {
   TrendingUp,
   Loader2
 } from "lucide-react";
-import { SalarySlip } from "@/models/interfaces/SalarySlip";
+import { TrainerSalarySlip } from "@/models/interfaces/SalarySlip";
+import { TrainerSalaryService } from "@/services/trainerSalaryService";
 
 const MONTHS = [
   { value: 1, label: "January" },
@@ -51,7 +51,7 @@ export default function TrainerSalarySlips() {
   const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
   const [paymentStatus, setPaymentStatus] = useState<string>("all");
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
-  const [selectedSlip, setSelectedSlip] = useState<SalarySlip | null>(null);
+  const [selectedSlip, setSelectedSlip] = useState<TrainerSalarySlip | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -73,7 +73,7 @@ export default function TrainerSalarySlips() {
   });
 
   const { data: paginatedData, isLoading, refetch } = useQuery({
-    queryKey: ["salary-slips", gymId, pageNo, pageSize, selectedTrainerId, selectedMonth, selectedYear, paymentStatus],
+    queryKey: ["salaryslips", gymId, pageNo, pageSize, selectedTrainerId, selectedMonth, selectedYear, paymentStatus],
     queryFn: async () => {
       if (!gymId) return { data: [], totalCount: 0, pageNo: 1, pageSize: 10, totalPages: 0 };
       return await TrainerSalaryService.getSalarySlipsByGymPaginated(gymId, {
@@ -89,7 +89,7 @@ export default function TrainerSalarySlips() {
   });
 
   const { data: summary } = useQuery({
-    queryKey: ["salary-slips-summary", gymId, selectedTrainerId, selectedMonth, selectedYear, paymentStatus],
+    queryKey: ["salaryslips-summary", gymId, selectedTrainerId, selectedMonth, selectedYear, paymentStatus],
     queryFn: async () => {
       if (!gymId) return null;
       return await TrainerSalaryService.getSalarySlipSummary(gymId, {
@@ -106,7 +106,7 @@ export default function TrainerSalarySlips() {
   const totalCount = paginatedData?.totalCount ?? 0;
   const totalPages = paginatedData?.totalPages ?? 0;
 
-  const handleViewSlip = (slip: SalarySlip) => {
+  const handleViewSlip = (slip: TrainerSalarySlip) => {
     setSelectedSlip(slip);
     setIsViewDialogOpen(true);
   };
@@ -124,7 +124,7 @@ export default function TrainerSalarySlips() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `salary-slips-${selectedYear}.csv`;
+      a.download = `salaryslips-${selectedYear}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -150,7 +150,7 @@ export default function TrainerSalarySlips() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `salary-slips-${selectedYear}.pdf`;
+      a.download = `salaryslips-${selectedYear}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -336,7 +336,7 @@ export default function TrainerSalarySlips() {
                       {slip.trainer?.firstName} {slip.trainer?.lastName}
                     </TableCell>
                     <TableCell>
-                      {MONTHS.find(m => m.value === slip.salaryMonth)?.label} {slip.salaryYear}
+                      {MONTHS.find(m => m.value === slip.month)?.label} {slip.year}
                     </TableCell>
                     <TableCell className="text-right">{slip.baseSalary.toLocaleString()}</TableCell>
                     <TableCell className="text-right">{slip.activeMemberCount}</TableCell>
