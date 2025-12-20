@@ -1,6 +1,5 @@
+import { PaymentStatus } from "../enums/PaymentStatus";
 import { Trainer } from "./Trainer";
-
-export type PaymentStatus = "unpaid" | "paid";
 
 export interface TrainerSalarySlip {
   id: number;

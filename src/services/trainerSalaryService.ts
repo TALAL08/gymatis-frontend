@@ -39,8 +39,8 @@ export class TrainerSalaryService {
     return res.data;
   }
 
-  static async markAsPaid(id: number): Promise<TrainerSalarySlip> {
-    const res = await axiosClient.patch<TrainerSalarySlip>(`/salaryslips/${id}/mark-paid`);
+  static async markAsPaid(id: string | number, accountId: string): Promise<TrainerSalarySlip> {
+    const res = await axiosClient.post<TrainerSalarySlip>(`/salaryslips/${id}/mark-paid/${accountId}`);
     return res.data;
   }
 

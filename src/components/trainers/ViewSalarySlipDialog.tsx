@@ -1,12 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import { TrainerSalaryService } from "@/services/trainerSalaryService";
+import { AccountService } from "@/services/accountService";
+import { Account } from "@/models/interfaces/Account";
 import { TrainerSalarySlip } from "@/models/interfaces/SalarySlip";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2, Download, CheckCircle, FileText } from "lucide-react";
 import {
@@ -19,6 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { PaymentStatus } from "@/models/enums/PaymentStatus";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -33,14 +47,41 @@ interface ViewSalarySlipDialogProps {
 
 export function ViewSalarySlipDialog({ open, onOpenChange, salarySlip }: ViewSalarySlipDialogProps) {
   const queryClient = useQueryClient();
+  const { gymId } = useAuth();
   const [isMarkingPaid, setIsMarkingPaid] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [selectedAccountId, setSelectedAccountId] = useState<string>("");
+  const [loadingAccounts, setLoadingAccounts] = useState(false);
+
+  useEffect(() => {
+    if (showConfirmDialog && gymId) {
+      setLoadingAccounts(true);
+      AccountService.getActiveAccounts(Number(gymId))
+        .then((data) => {
+          setAccounts(data);
+          if (data.length > 0 && !selectedAccountId) {
+            setSelectedAccountId(data[0].id);
+          }
+        })
+        .catch(() => {
+          toast.error("Failed to load accounts");
+        })
+        .finally(() => {
+          setLoadingAccounts(false);
+        });
+    }
+  }, [showConfirmDialog, gymId]);
 
   const handleMarkAsPaid = async () => {
+    if (!selectedAccountId) {
+      toast.error("Please select an account");
+      return;
+    }
     setIsMarkingPaid(true);
     try {
-      await TrainerSalaryService.markAsPaid(salarySlip.id);
+      await TrainerSalaryService.markAsPaid(salarySlip.id, selectedAccountId);
       toast.success("Salary marked as paid");
       queryClient.invalidateQueries({ queryKey: ["salaryslips"] });
       setShowConfirmDialog(false);
@@ -52,27 +93,82 @@ export function ViewSalarySlipDialog({ open, onOpenChange, salarySlip }: ViewSal
     }
   };
 
-  const handleDownload = async () => {
+  const generatePdf = () => {
+    const doc = new jsPDF();
+    const trainerName = `${salarySlip.trainer?.firstName || ""} ${salarySlip.trainer?.lastName || ""}`.trim();
+    const monthYear = `${MONTHS[salarySlip.month - 1]} ${salarySlip.year}`;
+
+    // Header
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("SALARY SLIP", 105, 20, { align: "center" });
+
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.text(monthYear, 105, 28, { align: "center" });
+
+    // Trainer Info
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Trainer Information", 14, 45);
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Name: ${trainerName}`, 14, 55);
+    doc.text(`Generated On: ${format(new Date(salarySlip.generatedAt), "PPP")}`, 14, 62);
+    if (salarySlip.paymentStatus === PaymentStatus.Paid && salarySlip.paidAt) {
+      doc.text(`Paid On: ${format(new Date(salarySlip.paidAt), "PPP")}`, 14, 69);
+    }
+    doc.text(`Status: ${salarySlip.paymentStatus == PaymentStatus.Paid ? "Paid" : "Unpaid"}`, 14, salarySlip.paidAt ? 76 : 69);
+
+    // Salary Breakdown Table
+    const startY = salarySlip.paidAt ? 90 : 83;
+    autoTable(doc, {
+      startY,
+      head: [["Description", "Amount"]],
+      body: [
+        ["Base Salary", `Rs. ${salarySlip.baseSalary.toLocaleString()}`],
+        ["Active Members", salarySlip.activeMemberCount.toString()],
+        ["Per Member Incentive", `Rs. ${salarySlip.perMemberIncentive.toLocaleString()}`],
+        ["Incentive Total", `Rs. ${salarySlip.incentiveTotal.toLocaleString()}`],
+      ],
+      theme: "striped",
+      headStyles: { fillColor: [59, 130, 246] },
+      styles: { fontSize: 11 },
+    });
+
+    // Gross Salary
+    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Gross Salary:", 14, finalY);
+    doc.setTextColor(59, 130, 246);
+    doc.text(`Rs. ${salarySlip.grossSalary.toLocaleString()}`, 60, finalY);
+    doc.setTextColor(0, 0, 0);
+
+    // Footer
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "italic");
+    doc.text("This is a computer-generated document.", 105, 280, { align: "center" });
+
+    return doc;
+  };
+
+  const handleDownload = () => {
     setIsDownloading(true);
     try {
-      const blob = await TrainerSalaryService.downloadSalarySlipPdf(salarySlip.id);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `salary-slip-${salarySlip.trainer?.firstName}-${salarySlip.trainer?.lastName}-${MONTHS[salarySlip.month - 1]}-${salarySlip.year}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      const doc = generatePdf();
+      const fileName = `salary-slip-${salarySlip.trainer?.firstName}-${salarySlip.trainer?.lastName}-${MONTHS[salarySlip.month - 1]}-${salarySlip.year}.pdf`;
+      doc.save(fileName);
       toast.success("Salary slip downloaded");
     } catch (error: any) {
-      toast.error(error.message || "Failed to download salary slip");
+      toast.error("Failed to generate PDF");
     } finally {
       setIsDownloading(false);
     }
   };
 
-  const isPaid = salarySlip.paymentStatus === "paid";
+  const isPaid = salarySlip.paymentStatus == PaymentStatus.Paid;
 
   return (
     <>
@@ -183,9 +279,33 @@ export function ViewSalarySlipDialog({ open, onOpenChange, salarySlip }: ViewSal
               Are you sure you want to mark this salary slip as paid? This action cannot be undone and the slip will become read-only.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          
+          <div className="py-4">
+            <Label htmlFor="account">Select Account</Label>
+            <Select
+              value={selectedAccountId}
+              onValueChange={setSelectedAccountId}
+              disabled={loadingAccounts}
+            >
+              <SelectTrigger id="account" className="mt-2">
+                <SelectValue placeholder={loadingAccounts ? "Loading accounts..." : "Select an account"} />
+              </SelectTrigger>
+              <SelectContent>
+                {accounts.map((account) => (
+                  <SelectItem key={account.id} value={account.id}>
+                    {account.accountName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleMarkAsPaid} disabled={isMarkingPaid}>
+            <AlertDialogAction 
+              onClick={handleMarkAsPaid} 
+              disabled={isMarkingPaid || !selectedAccountId}
+            >
               {isMarkingPaid && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Confirm
             </AlertDialogAction>

@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { TrainerSalarySlip } from "@/models/interfaces/SalarySlip";
 import { TrainerSalaryService } from "@/services/trainerSalaryService";
+import { PaymentStatus } from "@/models/enums/PaymentStatus";
 
 const MONTHS = [
   { value: 1, label: "January" },
@@ -344,12 +345,12 @@ export default function TrainerSalarySlips() {
                     <TableCell className="text-right font-semibold">{slip.grossSalary.toLocaleString()}</TableCell>
                     <TableCell>
                       <Badge
-                        className={slip.paymentStatus === "paid" 
+                        className={slip.paymentStatus == PaymentStatus.Paid 
                           ? "bg-success/10 text-success border-success/20" 
                           : "bg-warning/10 text-warning border-warning/20"
                         }
                       >
-                        {slip.paymentStatus === "paid" ? "Paid" : "Unpaid"}
+                        {slip.paymentStatus == PaymentStatus.Paid ? "Paid" : "Unpaid"}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
