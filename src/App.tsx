@@ -248,6 +248,16 @@ const App = () => (
               }
             />
             <Route
+              path="/account-ledger/:id"
+              element={
+                <ProtectedRoute requiredRoles={[UserRole.Admin, UserRole.Staff]}>
+                  <DashboardLayout>
+                    <AccountLedger />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />            
+            <Route
               path="/reports/account-summary"
               element={
                 <ProtectedRoute requiredRoles={[UserRole.Admin, UserRole.Staff]}>

@@ -1,7 +1,7 @@
 export enum ReferenceType {
-  Fee = 'fee',
-  Expense = 'expense',
-  Adjustment = 'adjustment',
+  Fee = 1,
+  Expense = 2,
+  Adjustment = 3,
 }
 
 export interface AccountTransaction {

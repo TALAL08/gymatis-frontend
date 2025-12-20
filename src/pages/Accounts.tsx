@@ -60,9 +60,9 @@ export default function Accounts() {
     setDeactivateDialogOpen(true);
   };
 
-  const handleViewLedger = (account: Account) => {
-    navigate(`/accounts/${account.id}/ledger`);
-  };
+const handleViewLedger = (account: Account) => {
+  navigate(`/account-ledger/${account.id}`);
+};
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {

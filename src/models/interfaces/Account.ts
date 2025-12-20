@@ -1,16 +1,16 @@
 export enum AccountType {
-  Bank = 'bank',
-  Cash = 'cash',
+  Bank = 1,
+  Cash = 2
 }
 
 export enum AccountStatus {
-  Active = 'active',
-  Inactive = 'inactive',
+  Active = 1,
+  Inactive = 2,
 }
 
 export interface Account {
-  id: string;
-  gymId: string;
+  id: number;
+  gymId: number;
   accountName: string;
   accountType: AccountType;
   bankName?: string | null;

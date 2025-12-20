@@ -24,9 +24,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
-import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { parseNumericEnum } from '@/lib/utils';
 
 export default function AccountLedger() {
   const { id: paramAccountId } = useParams<{ id: string }>();
@@ -70,7 +70,7 @@ export default function AccountLedger() {
           accountId: currentAccountId!,
           startDate,
           endDate,
-          referenceType: referenceType as ReferenceType | undefined,
+          referenceType: parseNumericEnum(ReferenceType, referenceType),
         },
         { pageNo, pageSize, searchText: '' }
       ),
@@ -87,7 +87,7 @@ export default function AccountLedger() {
         accountId: currentAccountId,
         startDate,
         endDate,
-        referenceType: referenceType as ReferenceType | undefined,
+          referenceType: parseNumericEnum(ReferenceType, referenceType),
       });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -111,7 +111,7 @@ export default function AccountLedger() {
         accountId: currentAccountId,
         startDate,
         endDate,
-        referenceType: referenceType as ReferenceType | undefined,
+          referenceType: parseNumericEnum(ReferenceType, referenceType),
       });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -137,7 +137,7 @@ export default function AccountLedger() {
     setSelectedAccountId('all');
     setStartDate('');
     setEndDate('');
-    setReferenceType('');
+    setReferenceType(null);
   };
 
   const getReferenceTypeBadge = (type: ReferenceType) => {
@@ -199,7 +199,7 @@ export default function AccountLedger() {
             <SelectContent>
               <SelectItem value="all">All Accounts</SelectItem>
               {accountsList?.map((acc) => (
-                <SelectItem key={acc.id} value={acc.id}>
+                <SelectItem key={acc.id} value={acc.id.toString()}>
                   {acc.accountName}
                 </SelectItem>
               ))}

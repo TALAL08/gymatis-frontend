@@ -72,7 +72,7 @@ export class AccountService {
   /**
    * Update an account
    */
-  static async updateAccount(id: string, data: AccountUpdateRequest): Promise<Account> {
+  static async updateAccount(id: number, data: AccountUpdateRequest): Promise<Account> {
     const res = await axiosClient.patch(`/accounts/${id}`, data);
     return res.data as Account;
   }
@@ -80,7 +80,7 @@ export class AccountService {
   /**
    * Deactivate an account (soft delete)
    */
-  static async deactivateAccount(id: string): Promise<void> {
+  static async deactivateAccount(id: number): Promise<void> {
     await axiosClient.patch(`/accounts/${id}/deactivate`);
   }
 

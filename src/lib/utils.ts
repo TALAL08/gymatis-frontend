@@ -44,3 +44,19 @@ export const parseNullableInt = (value: string): number | null => {
   return null;
 
 }
+
+export function parseNumericEnum<
+  T extends Record<string, string | number>
+>(
+  enumObj: T,
+  value: string | number
+): T[keyof T] | undefined {
+  const num = Number(value);
+
+  return Object.values(enumObj).some(
+    v => typeof v === 'number' && v === num
+  )
+    ? (num as T[keyof T])
+    : undefined;
+}
+
