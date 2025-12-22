@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AccountService } from '@/services/accountService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -22,6 +22,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
+import { downloadAccountSummaryReportPdf } from '@/services/pdfService';
+import { exportToCSV } from '@/lib/export-utils';
+import { format } from 'date-fns';
 
 export default function ReportAccountSummary() {
   const { gymId } = useAuth();
@@ -47,12 +50,35 @@ export default function ReportAccountSummary() {
   const totalDebit = data?.reduce((sum, acc) => sum + acc.totalDebit, 0) || 0;
   const totalClosing = data?.reduce((sum, acc) => sum + acc.closingBalance, 0) || 0;
 
-  const handleExportCsv = async () => {
-    toast.info('Export functionality will call backend API');
+  const handleExportCsv = () => {
+    if (!data || data.length === 0) {
+      toast.error('No data to export');
+      return;
+    }
+    const headers = ['Account Name', 'Type', 'Opening Balance', 'Total Credit', 'Total Debit', 'Closing Balance'];
+    const csvData = data.map((acc) => [
+      acc.accountName,
+      acc.accountType,
+      acc.openingBalance,
+      acc.totalCredit,
+      acc.totalDebit,
+      acc.closingBalance,
+    ]);
+    exportToCSV(headers, csvData, `account-summary-${format(new Date(), 'yyyy-MM-dd')}`);
+    toast.success('CSV exported successfully');
   };
 
-  const handleExportPdf = async () => {
-    toast.info('Export functionality will call backend API');
+  const handleExportPdf = () => {
+    if (!data || data.length === 0) {
+      toast.error('No data to export');
+      return;
+    }
+    downloadAccountSummaryReportPdf(
+      data,
+      { totalOpening, totalCredit, totalDebit, totalClosing },
+      { startDate, endDate }
+    );
+    toast.success('PDF exported successfully');
   };
 
   return (

@@ -15,11 +15,13 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Download, FileText, Printer, Search } from "lucide-react";
-import { exportToPDF, exportToCSV, printTable } from "@/lib/export-utils";
+import { exportToCSV, printTable } from "@/lib/export-utils";
 import { format } from "date-fns";
 import { Invoice } from "@/models/interfaces/Invoice";
 import { InvoiceStatus } from "@/models/enums/InvoiceStatus";
 import { PaymentMethod } from "@/models/enums/PaymentMethod";
+import { downloadPaymentCollectionReportPdf, PaymentRecord } from "@/services/pdfService";
+import { toast } from "sonner";
 
 const ReportPayments = () => {
   const { gymId } = useAuth();
@@ -112,7 +114,7 @@ const ReportPayments = () => {
       .filter(r => r.status === InvoiceStatus.Paid || r.status === InvoiceStatus.PartiallyPaid)
       .reduce((sum, record) => sum + Number(record.netAmount), 0);
     const pendingAmount = filteredData
-      .filter(r => r.status === InvoiceStatus.Pending || r.status === InvoiceStatus.Overdue)
+      .filter(r => r.status === InvoiceStatus.Unpaid || r.status === InvoiceStatus.Overdue)
       .reduce((sum, record) => sum + Number(record.netAmount), 0);
 
     return { totalAmount, paidAmount, pendingAmount };
@@ -121,24 +123,20 @@ const ReportPayments = () => {
   const stats = getTotalStats();
 
   const handleExportPDF = () => {
-    const headers = ["Invoice #", "Member", "Amount", "Discount", "Net Amount", "Status", "Payment Method", "Date"];
-    const data = filteredData.map(record => [
-      record.invoiceNumber,
-      `${record.member.firstName} ${record.member.lastName}`,
-      `PKR ${Number(record.amount).toLocaleString()}`,
-      `PKR ${Number(record.discount || 0).toLocaleString()}`,
-      `PKR ${Number(record.netAmount).toLocaleString()}`,
-      InvoiceStatus[record.status].toUpperCase(),
-      PaymentMethod[record.paymentMethod].toUpperCase() || "N/A",
-      format(new Date(record.createdAt), "MMM dd, yyyy"),
-    ]);
+    const records: PaymentRecord[] = filteredData.map(record => ({
+      invoiceNumber: record.invoiceNumber,
+      memberCode: record.member.memberCode,
+      memberName: `${record.member.firstName} ${record.member.lastName}`,
+      amount: Number(record.amount),
+      discount: Number(record.discount || 0),
+      netAmount: Number(record.netAmount),
+      status: InvoiceStatus[record.status].toUpperCase(),
+      paymentMethod: record.paymentMethod ? PaymentMethod[record.paymentMethod].toUpperCase() : 'N/A',
+      createdAt: record.createdAt,
+    }));
 
-    exportToPDF(
-      "Payment Collection Report",
-      headers,
-      data,
-      `payments-report-${startDate}-to-${endDate}`
-    );
+    downloadPaymentCollectionReportPdf(records, stats, { startDate, endDate });
+    toast.success("PDF exported successfully");
   };
 
   const handleExportCSV = () => {

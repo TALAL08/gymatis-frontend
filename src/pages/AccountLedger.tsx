@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Download, FileText } from 'lucide-react';
+import { Download, FileText, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AccountService } from '@/services/accountService';
 import { ReferenceType } from '@/models/interfaces/AccountTransaction';
@@ -27,6 +27,7 @@ import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { parseNumericEnum } from '@/lib/utils';
+import { downloadAccountLedgerPdf, LedgerEntry } from '@/services/pdfService';
 
 export default function AccountLedger() {
   const { id: paramAccountId } = useParams<{ id: string }>();
@@ -107,18 +108,34 @@ export default function AccountLedger() {
       return;
     }
     try {
-      const blob = await AccountService.exportLedgerPdf({
-        accountId: currentAccountId,
+      // Fetch all ledger data for export
+      const allData = await AccountService.getAccountLedger(
+        {
+          accountId: currentAccountId,
+          startDate,
+          endDate,
+          referenceType: parseNumericEnum(ReferenceType, referenceType),
+        },
+        { pageNo: 1, pageSize: 10000, searchText: '' }
+      );
+
+      const entries: LedgerEntry[] = allData.data.map((txn) => ({
+        transactionDate: txn.transactionDate,
+        referenceNo: txn.referenceNo,
+        description: txn.description,
+        debit: txn.debit,
+        credit: txn.credit,
+        balance: txn.balance,
+        referenceType: ReferenceType[txn.referenceType] || 'Unknown',
+      }));
+
+      downloadAccountLedgerPdf(entries, {
+        accountName: account?.accountName || 'Account',
         startDate,
         endDate,
-          referenceType: parseNumericEnum(ReferenceType, referenceType),
+        currentBalance: account?.currentBalance || 0,
       });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `ledger-${account?.accountName}-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
-      a.click();
-      window.URL.revokeObjectURL(url);
+
       toast.success('PDF exported successfully');
     } catch (error) {
       toast.error('Failed to export PDF');
@@ -197,7 +214,7 @@ export default function AccountLedger() {
               <SelectValue placeholder="Select Account" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Accounts</SelectItem>
+              <SelectItem value="all">Select Account</SelectItem>
               {accountsList?.map((acc) => (
                 <SelectItem key={acc.id} value={acc.id.toString()}>
                   {acc.accountName}

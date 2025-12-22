@@ -4,8 +4,6 @@
  */
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { TrainerSalarySlip } from '@/models/interfaces/SalarySlip';
-import { PaymentStatus } from '@/models/enums/PaymentStatus';
 import {
   PDF_COLORS,
   PDF_TABLE_STYLES,
@@ -24,6 +22,20 @@ import {
   getTableEndY,
 } from '../pdf-utils';
 
+export interface SalarySlipPdfData {
+  trainer?: { firstName?: string; lastName?: string };
+  month: number;
+  year: number;
+  paymentStatus: string;
+  generatedAt: string;
+  paidAt?: string;
+  baseSalary: number;
+  activeMemberCount: number;
+  perMemberIncentive: number;
+  incentiveTotal: number;
+  grossSalary: number;
+}
+
 export interface SalarySlipPdfOptions {
   gymName?: string;
   showLogo?: boolean;
@@ -38,13 +50,13 @@ const MONTHS = [
  * Generate a salary slip PDF
  */
 export const generateSalarySlipPdf = (
-  salarySlip: TrainerSalarySlip,
+  salarySlip: SalarySlipPdfData,
   options?: SalarySlipPdfOptions
 ): jsPDF => {
   const doc = createPdfDocument();
   const trainerName = `${salarySlip.trainer?.firstName || ''} ${salarySlip.trainer?.lastName || ''}`.trim();
   const monthYear = `${MONTHS[salarySlip.month - 1]} ${salarySlip.year}`;
-  const isPaid = salarySlip.paymentStatus === PaymentStatus.Paid;
+  const isPaid = salarySlip.paymentStatus === 'Paid';
 
   // Header
   let currentY = addPdfHeader(doc, 'SALARY SLIP', monthYear, {
@@ -122,7 +134,7 @@ export const generateSalarySlipPdf = (
  * Download salary slip PDF
  */
 export const downloadSalarySlipPdf = (
-  salarySlip: TrainerSalarySlip,
+  salarySlip: SalarySlipPdfData,
   options?: SalarySlipPdfOptions
 ): void => {
   const doc = generateSalarySlipPdf(salarySlip, options);

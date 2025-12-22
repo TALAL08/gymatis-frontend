@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, Search, Building2, Wallet, MoreHorizontal, Edit, Power, Eye } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,18 +9,16 @@ import { useDebounce } from '@/hooks/use-debounce';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import { AddAccountDialog } from '@/components/accounts/AddAccountDialog';
 import { EditAccountDialog } from '@/components/accounts/EditAccountDialog';
-import { DeactivateAccountDialog } from '@/components/accounts/DeactivateAccountDialog';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ToggleAccountStatusDialog } from '@/components/accounts/ToggleAccountStatusDialog';
 import { useNavigate } from 'react-router-dom';
 
 export default function Accounts() {
@@ -229,7 +227,7 @@ return (
             setSelectedAccount(null);
           }}
         />
-        <DeactivateAccountDialog
+        <ToggleAccountStatusDialog
           open={deactivateDialogOpen}
           onOpenChange={(open) => {
             setDeactivateDialogOpen(open);

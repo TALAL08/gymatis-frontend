@@ -19,10 +19,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { Search, Receipt, DollarSign, AlertCircle } from 'lucide-react';
+import { Search, Receipt, DollarSign, AlertCircle, MoreHorizontal, Eye, CreditCard } from 'lucide-react';
 import { PaymentDialog } from '@/components/invoices/PaymentDialog';
+import { ViewPaymentsDialog } from '@/components/invoices/ViewPaymentsDialog';
 import { Invoice } from '@/models/interfaces/Invoice';
 import { InvoiceStatus } from '@/models/enums/InvoiceStatus';
 import { Card, CardContent } from '@/components/ui/card';
@@ -36,6 +43,7 @@ export default function Invoices() {
   const [statusFilter, setStatusFilter] = useState<'all' | keyof typeof InvoiceStatus>('all');
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [isViewPaymentsOpen, setIsViewPaymentsOpen] = useState(false);
 
   const canManage = isAdmin || isStaff;
 
@@ -88,7 +96,7 @@ export default function Invoices() {
     const variants: Record<InvoiceStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
       [InvoiceStatus.Paid]: 'default',
       [InvoiceStatus.PartiallyPaid]: 'default',      
-      [InvoiceStatus.Pending]: 'secondary',
+      [InvoiceStatus.Unpaid]: 'secondary',
       [InvoiceStatus.Overdue]: 'destructive',
       [InvoiceStatus.Cancelled]: 'outline',
     };
@@ -101,12 +109,17 @@ export default function Invoices() {
     setIsPaymentOpen(true);
   };
 
+  const handleViewPayments = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setIsViewPaymentsOpen(true);
+  };
+
   // Calculate stats from current page (for display purposes)
   const overdueInvoices = invoices?.filter(inv => inv.status === InvoiceStatus.Overdue).length || 0;
   const totalPending = invoices
     ?.filter(
       inv =>
-        inv.status === InvoiceStatus.Pending || inv.status === InvoiceStatus.Overdue
+        inv.status === InvoiceStatus.Unpaid || inv.status === InvoiceStatus.Overdue
     )
     .reduce((sum, inv) => sum + Number(inv.netAmount), 0) || 0;
 
@@ -238,11 +251,27 @@ export default function Invoices() {
                         <TableCell>{format(new Date(invoice.createdAt), 'MMM dd, yyyy')}</TableCell>
                         {canManage && (
                           <TableCell>
-                            {(invoice.status === InvoiceStatus.Pending || invoice.status === InvoiceStatus.Overdue) && (
-                              <Button size="sm" onClick={() => handlePayment(invoice)}>
-                                Record Payment
-                              </Button>
-                            )}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleViewPayments(invoice)}>
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  View Payments
+                                </DropdownMenuItem>
+                                {(invoice.status === InvoiceStatus.Unpaid || 
+                                  invoice.status === InvoiceStatus.Overdue ||
+                                  invoice.status === InvoiceStatus.PartiallyPaid) && (
+                                  <DropdownMenuItem onClick={() => handlePayment(invoice)}>
+                                    <CreditCard className="mr-2 h-4 w-4" />
+                                    Record Payment
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </TableCell>
                         )}
                       </TableRow>
@@ -270,16 +299,24 @@ export default function Invoices() {
       </div>
 
       {selectedInvoice && (
-        <PaymentDialog
-          open={isPaymentOpen}
-          onOpenChange={setIsPaymentOpen}
-          invoice={selectedInvoice}
-          onSuccess={() => {
-            refetch();
-            setIsPaymentOpen(false);
-            setSelectedInvoice(null);
-          }}
-        />
+        <>
+          <PaymentDialog
+            open={isPaymentOpen}
+            onOpenChange={setIsPaymentOpen}
+            invoice={selectedInvoice}
+            onSuccess={() => {
+              refetch();
+              setIsPaymentOpen(false);
+              setSelectedInvoice(null);
+            }}
+          />
+          <ViewPaymentsDialog
+            open={isViewPaymentsOpen}
+            onOpenChange={setIsViewPaymentsOpen}
+            invoice={selectedInvoice}
+            onPaymentDeleted={() => refetch()}
+          />
+        </>
       )}
     </div>
   );

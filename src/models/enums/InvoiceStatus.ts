@@ -1,5 +1,5 @@
 export enum InvoiceStatus {
-    Pending = 1,
+    Unpaid = 1,
     PartiallyPaid = 2,
     Paid = 3,
     Overdue = 4,

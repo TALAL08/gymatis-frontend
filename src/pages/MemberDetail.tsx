@@ -106,12 +106,12 @@ const MemberDetail = () => {
               <Edit className="mr-2 h-4 w-4" />
               Edit
             </Button>
-            {isAdmin && (
+            {/* {isAdmin && (
               <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)}>
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete
               </Button>
-            )}
+            )} */}
           </div>
         </div>
 

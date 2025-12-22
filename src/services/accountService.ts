@@ -77,13 +77,13 @@ export class AccountService {
     return res.data as Account;
   }
 
-  /**
-   * Deactivate an account (soft delete)
-   */
-  static async deactivateAccount(id: number): Promise<void> {
-    await axiosClient.patch(`/accounts/${id}/deactivate`);
+  static async toggleStatus(
+    id: number,
+    isActive: boolean
+  ): Promise<Account> {
+    const res = await axiosClient.patch(`/accounts/${id}/status`, { isActive });
+    return res.data;
   }
-
   /**
    * Get account ledger (transactions)
    */

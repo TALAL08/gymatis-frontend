@@ -9,8 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AddTrainerDialog } from "@/components/trainers/AddTrainerDialog";
 import { EditTrainerDialog } from "@/components/trainers/EditTrainerDialog";
-import { DeleteTrainerDialog } from "@/components/trainers/DeleteTrainerDialog";
-import { Plus, Search, Edit, Trash2, UserCircle, Eye } from "lucide-react";
+import { ToggleTrainerStatusDialog } from "@/components/trainers/ToggleTrainerStatus";
+import { Plus, Search, Edit, Trash2, UserCircle, Eye, Power } from "lucide-react";
 import { usePagination } from "@/hooks/use-pagination";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -23,7 +23,7 @@ export default function Trainers() {
   const [selectedTrainer, setSelectedTrainer] = useState<any>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isActiveDialogOpen, setToggleIsActiveDialogOpen] = useState(false);
 
   const {
     pageNo,
@@ -77,7 +77,7 @@ export default function Trainers() {
 
   const handleDelete = (trainer: any) => {
     setSelectedTrainer(trainer);
-    setIsDeleteDialogOpen(true);
+    setToggleIsActiveDialogOpen(true);
   };
 
   return (
@@ -197,11 +197,11 @@ export default function Trainers() {
                               <Edit className="h-4 w-4" />
                             </Button>
                             <Button
-                              variant="destructive"
+                              variant={trainer.isActive ? "destructive" : "secondary"}
                               size="sm"
                               onClick={() => handleDelete(trainer)}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Power className="mr-2 h-4 w-4" />
                             </Button>
                           </>
                         )}
@@ -256,10 +256,10 @@ export default function Trainers() {
             }}
             trainer={selectedTrainer}
           />
-          <DeleteTrainerDialog
-            open={isDeleteDialogOpen}
+          <ToggleTrainerStatusDialog
+            open={isActiveDialogOpen}
             onOpenChange={(open) => {
-              setIsDeleteDialogOpen(open);
+              setToggleIsActiveDialogOpen(open);
               if (!open) refetch();
             }}
             trainer={selectedTrainer}

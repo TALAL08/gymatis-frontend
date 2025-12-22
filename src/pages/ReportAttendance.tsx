@@ -14,10 +14,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Download, FileText, Printer, Search } from "lucide-react";
-import { exportToPDF, exportToCSV, printTable } from "@/lib/export-utils";
+import { exportToCSV, printTable } from "@/lib/export-utils";
 import { format } from "date-fns";
 import { AttendanceLog } from "@/models/interfaces/AttendanceLog";
 import { convertUtcToTimeZone } from "@/lib/datetime-utils";
+import { downloadAttendanceReportPdf, AttendanceRecord } from "@/services/pdfService";
+import { toast } from "sonner";
 
 const ReportAttendance = () => {
   const { gymId } = useAuth();
@@ -84,21 +86,16 @@ const ReportAttendance = () => {
   };
 
   const handleExportPDF = () => {
-    const headers = ["Member Code", "Name", "Check-in", "Check-out", "Duration"];
-    const data = filteredData.map(record => [
-      record.member.memberCode,
-      `${record.member.firstName} ${record.member.lastName}`,
-      format(new Date(record.checkInAt), "MMM dd, yyyy HH:mm"),
-      record.checkOutAt ? format(new Date(record.checkOutAt), "MMM dd, yyyy HH:mm") : "N/A",
-      calculateDuration(record.checkInAt, record.checkOutAt),
-    ]);
+    const records: AttendanceRecord[] = filteredData.map(record => ({
+      memberCode: record.member.memberCode,
+      memberName: `${record.member.firstName} ${record.member.lastName}`,
+      checkInAt: convertUtcToTimeZone(record.checkInAt),
+      checkOutAt: record.checkOutAt ? convertUtcToTimeZone(record.checkOutAt) : null,
+      duration: calculateDuration(convertUtcToTimeZone(record.checkInAt), record.checkOutAt ? convertUtcToTimeZone(record.checkOutAt) : null),
+    }));
 
-    exportToPDF(
-      "Member Attendance Report",
-      headers,
-      data,
-      `attendance-report-${startDate}-to-${endDate}`
-    );
+    downloadAttendanceReportPdf(records, { startDate, endDate });
+    toast.success("PDF exported successfully");
   };
 
   const handleExportCSV = () => {

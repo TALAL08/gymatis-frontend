@@ -27,6 +27,7 @@ import {
   LineChart,
   Line,
 } from 'recharts';
+import { downloadIncomeExpenseReportPdf } from '@/services/pdfService';
 
 export default function ReportIncomeExpense() {
   const { gymId } = useAuth();
@@ -68,19 +69,22 @@ export default function ReportIncomeExpense() {
     }
   };
 
-  const handleExportPdf = async () => {
-    try {
-      const blob = await ExpenseService.exportIncomeExpensePdf(gymId, startDate, endDate);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `income-expense-report-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-      toast.success('PDF exported successfully');
-    } catch (error) {
-      toast.error('Failed to export PDF');
+  const handleExportPdf = () => {
+    if (!chartData || chartData.length === 0) {
+      toast.error('No data to export');
+      return;
     }
+
+    downloadIncomeExpenseReportPdf(
+      chartData,
+      {
+        totalIncome: data?.totalIncome || 0,
+        totalExpense: data?.totalExpense || 0,
+        netProfitLoss: data?.netProfitLoss || 0,
+      },
+      { startDate, endDate }
+    );
+    toast.success('PDF exported successfully');
   };
 
   // Merge income and expense data for chart

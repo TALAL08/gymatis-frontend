@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
 import { TrainerService } from "@/services/trainerService";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -26,6 +25,7 @@ import {
 import { TrainerSalarySlip } from "@/models/interfaces/SalarySlip";
 import { TrainerSalaryService } from "@/services/trainerSalaryService";
 import { PaymentStatus } from "@/models/enums/PaymentStatus";
+import { downloadSalarySlipsReportPdf, SalarySlipSummary } from "@/services/pdfService";
 
 const MONTHS = [
   { value: 1, label: "January" },
@@ -142,20 +142,28 @@ export default function TrainerSalarySlips() {
     if (!gymId) return;
     setIsExporting(true);
     try {
-      const blob = await TrainerSalaryService.exportSalarySlipsPdf(gymId, {
+      // Fetch all salary slips for export
+      const allData = await TrainerSalaryService.getSalarySlipsByGymPaginated(gymId, {
+        pageNo: 1,
+        pageSize: 10000,
         trainerId: selectedTrainerId !== "all" ? parseInt(selectedTrainerId) : undefined,
         month: selectedMonth !== "all" ? parseInt(selectedMonth) : undefined,
         year: parseInt(selectedYear),
         paymentStatus: paymentStatus !== "all" ? paymentStatus : undefined,
       });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `salaryslips-${selectedYear}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+
+      const slipData: SalarySlipSummary[] = allData.data.map((slip) => ({
+        trainerName: `${slip.trainer?.firstName || ''} ${slip.trainer?.lastName || ''}`.trim(),
+        month: slip.month,
+        year: slip.year,
+        baseSalary: slip.baseSalary,
+        activeMemberCount: slip.activeMemberCount,
+        incentiveTotal: slip.incentiveTotal,
+        grossSalary: slip.grossSalary,
+        paymentStatus: slip.paymentStatus === PaymentStatus.Paid ? 'Paid' : 'Unpaid',
+      }));
+
+      downloadSalarySlipsReportPdf(slipData, { year: parseInt(selectedYear) });
       toast.success("Export completed");
     } catch (error: any) {
       toast.error(error.message || "Failed to export");

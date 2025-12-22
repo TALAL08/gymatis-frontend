@@ -38,6 +38,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { parseNullableInt } from '@/lib/utils';
+import { downloadExpenseReportPdfClient } from '@/services/pdfService';
 
 export default function ReportExpenses() {
   const { gymId } = useAuth();
@@ -101,19 +102,33 @@ export default function ReportExpenses() {
     }
   };
 
-  const handleExportPdf = async () => {
-    try {
-      const blob = await ExpenseService.exportExpenseReportPdf(gymId, startDate, endDate, parseNullableInt(categoryId),  parseNullableInt(accountId));
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `expense-report-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-      toast.success('PDF exported successfully');
-    } catch (error) {
-      toast.error('Failed to export PDF');
+  const handleExportPdf = () => {
+    if (!data || data.length === 0) {
+      toast.error('No data to export');
+      return;
     }
+
+    downloadExpenseReportPdfClient(
+      data.map((cat) => ({
+        categoryId: cat.categoryId,
+        categoryName: cat.categoryName,
+        totalAmount: cat.totalAmount,
+        transactionCount: cat.transactionCount,
+        expenses: cat.expenses.map((exp) => ({
+          id: exp.id,
+          date: exp.date,
+          description: exp.description,
+          accountName: exp.accountName,
+          amount: exp.amount,
+        })),
+      })),
+      {
+        startDate,
+        endDate,
+        showDetails: true,
+      }
+    );
+    toast.success('PDF exported successfully');
   };
 
   const clearFilters = () => {

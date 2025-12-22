@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { downloadSalarySlipPdf } from "@/lib/pdf";
+import { downloadSalarySlipPdf } from "@/services/pdfService";
 import { TrainerSalaryService } from "@/services/trainerSalaryService";
 import { AccountService } from "@/services/accountService";
 import { Account } from "@/models/interfaces/Account";
@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Download, CheckCircle, FileText } from "lucide-react";
+import { Loader2, Download, CheckCircle, FileText, XCircle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,8 +48,10 @@ export function ViewSalarySlipDialog({ open, onOpenChange, salarySlip }: ViewSal
   const queryClient = useQueryClient();
   const { gymId } = useAuth();
   const [isMarkingPaid, setIsMarkingPaid] = useState(false);
+  const [isMarkingUnpaid, setIsMarkingUnpaid] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showUnpaidConfirmDialog, setShowUnpaidConfirmDialog] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
   const [loadingAccounts, setLoadingAccounts] = useState(false);
@@ -92,13 +94,40 @@ export function ViewSalarySlipDialog({ open, onOpenChange, salarySlip }: ViewSal
     }
   };
 
+  const handleMarkAsUnpaid = async () => {
+    setIsMarkingUnpaid(true);
+    try {
+      await TrainerSalaryService.markAsUnpaid(salarySlip.id);
+      toast.success("Salary marked as unpaid");
+      queryClient.invalidateQueries({ queryKey: ["salaryslips"] });
+      setShowUnpaidConfirmDialog(false);
+      onOpenChange(false);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to mark as unpaid");
+    } finally {
+      setIsMarkingUnpaid(false);
+    }
+  };
+
   const handleDownload = () => {
     setIsDownloading(true);
     try {
-      downloadSalarySlipPdf(salarySlip);
+      downloadSalarySlipPdf({
+        trainer: salarySlip.trainer,
+        month: salarySlip.month,
+        year: salarySlip.year,
+        paymentStatus: salarySlip.paymentStatus === PaymentStatus.Paid ? 'Paid' : 'Unpaid',
+        generatedAt: salarySlip.generatedAt,
+        paidAt: salarySlip.paidAt,
+        baseSalary: salarySlip.baseSalary,
+        activeMemberCount: salarySlip.activeMemberCount,
+        perMemberIncentive: salarySlip.perMemberIncentive,
+        incentiveTotal: salarySlip.incentiveTotal,
+        grossSalary: salarySlip.grossSalary,
+      });
       toast.success("Salary slip downloaded");
     } catch (error: any) {
-      toast.error("Failed to generate PDF");
+      toast.error(error.message || "Failed to generate PDF");
     } finally {
       setIsDownloading(false);
     }
@@ -202,6 +231,16 @@ export function ViewSalarySlipDialog({ open, onOpenChange, salarySlip }: ViewSal
                   Mark as Paid
                 </Button>
               )}
+              {isPaid && (
+                <Button 
+                  variant="outline" 
+                  className="flex-1 text-destructive hover:text-destructive" 
+                  onClick={() => setShowUnpaidConfirmDialog(true)}
+                >
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Mark as Unpaid
+                </Button>
+              )}
             </div>
           </div>
         </DialogContent>
@@ -244,6 +283,29 @@ export function ViewSalarySlipDialog({ open, onOpenChange, salarySlip }: ViewSal
             >
               {isMarkingPaid && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showUnpaidConfirmDialog} onOpenChange={setShowUnpaidConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mark as Unpaid</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to mark this salary slip as unpaid? This will reverse the payment status.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleMarkAsUnpaid} 
+              disabled={isMarkingUnpaid}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isMarkingUnpaid && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Mark as Unpaid
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

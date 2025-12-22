@@ -1,19 +1,32 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { TrainerService } from '@/services/trainerService';
 import { AttendanceService } from '@/services/attendanceService';
+import { TrainerSalaryService } from '@/services/trainerSalaryService';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Users, Calendar, Award } from 'lucide-react';
+import { Users, Calendar, Award, DollarSign, Download, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { MemberService } from '@/services/memberService';
 import { MemberStatus } from '@/models/enums/MemberStatus';
+import { PaymentStatus } from '@/models/enums/PaymentStatus';
 import { AttendanceLog } from '@/models/interfaces/AttendanceLog';
 import { Member } from '@/models/interfaces/member';
+import { TrainerSalarySlip } from '@/models/interfaces/SalarySlip';
+import { downloadSalarySlipPdf } from '@/services/pdfService';
+import { toast } from 'sonner';
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
 
 const TrainerPortal = () => {
   const { user } = useAuth();
+  const [selectedSlip, setSelectedSlip] = useState<TrainerSalarySlip | null>(null);
 
   const { data: trainer } = useQuery({
     queryKey: ['trainer-profile', user?.id],
@@ -24,18 +37,17 @@ const TrainerPortal = () => {
     enabled: !!user,
   });
 
-const { data: members } = useQuery({
-  queryKey: ['trainer-members', trainer?.id],
-  queryFn: async () => {
-    if (!trainer?.id) return [];
-    const members = await MemberService.getMembersByTrainerId(trainer.id);
-    return members
-      ?.filter((member: Member) => member.status === MemberStatus.Active)
-      .map((member: Member) => member) || [];
-  },
-  enabled: !!trainer?.id,
-});
-
+  const { data: members } = useQuery({
+    queryKey: ['trainer-members', trainer?.id],
+    queryFn: async () => {
+      if (!trainer?.id) return [];
+      const members = await MemberService.getMembersByTrainerId(trainer.id);
+      return members
+        ?.filter((member: Member) => member.status === MemberStatus.Active)
+        .map((member: Member) => member) || [];
+    },
+    enabled: !!trainer?.id,
+  });
 
   const { data: memberAttendance } = useQuery({
     queryKey: ['trainer-member-attendance', trainer?.id],
@@ -57,6 +69,32 @@ const { data: members } = useQuery({
     enabled: !!trainer?.id,
   });
 
+  const { data: salarySlips } = useQuery({
+    queryKey: ['trainer-salary-slips', trainer?.id],
+    queryFn: async () => {
+      if (!trainer?.id) return [];
+      return await TrainerSalaryService.getSalarySlipsByTrainerId(trainer.id);
+    },
+    enabled: !!trainer?.id,
+  });
+
+  const handleDownloadSlip = (slip: TrainerSalarySlip) => {
+    downloadSalarySlipPdf({
+      trainer: slip.trainer,
+      month: slip.month,
+      year: slip.year,
+      paymentStatus: slip.paymentStatus === PaymentStatus.Paid ? 'Paid' : 'Unpaid',
+      generatedAt: slip.generatedAt,
+      paidAt: slip.paidAt,
+      baseSalary: slip.baseSalary,
+      activeMemberCount: slip.activeMemberCount,
+      perMemberIncentive: slip.perMemberIncentive,
+      incentiveTotal: slip.incentiveTotal,
+      grossSalary: slip.grossSalary,
+    });
+    toast.success('Salary slip downloaded');
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -69,7 +107,7 @@ const { data: members } = useQuery({
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Assigned Members</CardTitle>
@@ -100,6 +138,17 @@ const { data: members } = useQuery({
             <CardContent>
               <div className="text-2xl font-bold">{memberAttendance?.length || 0}</div>
               <p className="text-xs text-muted-foreground">Member check-ins</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Salary Slips</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{salarySlips?.length || 0}</div>
+              <p className="text-xs text-muted-foreground">Total generated</p>
             </CardContent>
           </Card>
         </div>
@@ -142,6 +191,74 @@ const { data: members } = useQuery({
               <div>
                 <p className="text-sm text-muted-foreground">Bio</p>
                 <p className="mt-1">{trainer?.bio}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Salary Slips Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>My Salary Slips</CardTitle>
+            <CardDescription>Your monthly salary slips and payment history</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {salarySlips && salarySlips.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Month / Year</TableHead>
+                    <TableHead className="text-right">Base Salary</TableHead>
+                    <TableHead className="text-right">Members</TableHead>
+                    <TableHead className="text-right">Incentive</TableHead>
+                    <TableHead className="text-right">Gross Salary</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {salarySlips.map((slip: TrainerSalarySlip) => (
+                    <TableRow key={slip.id}>
+                      <TableCell className="font-medium">
+                        {MONTHS[slip.month - 1]} {slip.year}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        Rs. {slip.baseSalary.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right">{slip.activeMemberCount}</TableCell>
+                      <TableCell className="text-right">
+                        Rs. {slip.incentiveTotal.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">
+                        Rs. {slip.grossSalary.toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={slip.paymentStatus === PaymentStatus.Paid
+                            ? "bg-success/10 text-success border-success/20"
+                            : "bg-warning/10 text-warning border-warning/20"
+                          }
+                        >
+                          {slip.paymentStatus === PaymentStatus.Paid ? "Paid" : "Unpaid"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDownloadSlip(slip)}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <DollarSign className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+                <p>No salary slips available yet</p>
               </div>
             )}
           </CardContent>

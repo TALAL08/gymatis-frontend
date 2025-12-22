@@ -29,6 +29,11 @@ export class TrainerSalaryService {
     return res.data;
   }
 
+  static async getSalarySlipsByTrainerId(trainerId: number): Promise<TrainerSalarySlip[]> {
+    const res = await axiosClient.get<TrainerSalarySlip[]>(`/salaryslips/trainer/${trainerId}`);
+    return res.data;
+  }
+
   static async getSalarySlipById(id: number): Promise<TrainerSalarySlip> {
     const res = await axiosClient.get<TrainerSalarySlip>(`/salaryslips/${id}`);
     return res.data;
@@ -41,6 +46,11 @@ export class TrainerSalaryService {
 
   static async markAsPaid(id: string | number, accountId: string): Promise<TrainerSalarySlip> {
     const res = await axiosClient.post<TrainerSalarySlip>(`/salaryslips/${id}/mark-paid/${accountId}`);
+    return res.data;
+  }
+
+  static async markAsUnpaid(id: string | number): Promise<TrainerSalarySlip> {
+    const res = await axiosClient.post<TrainerSalarySlip>(`/salaryslips/${id}/mark-unpaid`);
     return res.data;
   }
 

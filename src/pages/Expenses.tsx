@@ -40,6 +40,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { parseNullableInt } from '@/lib/utils';
 import { ExpenseCategoryService } from '@/services/expenseCategoryService';
+import { DefaultExpenseCategories } from '@/models/constants/DefaultExpenseCategories';
 
 export default function Expenses() {
   const { gymId } = useAuth();
@@ -89,12 +90,6 @@ export default function Expenses() {
     queryFn: () => AccountService.getActiveAccounts(gymId),
     enabled: !!gymId,
   });
-
-
-  const handleEdit = (expense: Expense) => {
-    setSelectedExpense(expense);
-    setEditDialogOpen(true);
-  };
 
   const handleDelete = (expense: Expense) => {
     setSelectedExpense(expense);
@@ -278,26 +273,27 @@ return (
                       {formatCurrency(expense.amount)}
                     </TableCell>
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(expense)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(expense)}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      {
+                        expense.category.name != DefaultExpenseCategories.Salaries && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleDelete(expense)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )
+                      }
                     </TableCell>
                   </TableRow>
                 ))}

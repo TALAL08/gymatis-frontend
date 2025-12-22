@@ -13,6 +13,14 @@ export class TransactionService {
   }
 
   /**
+   * Get transactions by invoice
+   */
+  static async getTransactionsByInvoice(invoiceId: number): Promise<Transaction[]> {
+    const res = await axiosClient.get(`/transactions/invoice/${invoiceId}`);
+    return res.data as Transaction[];
+  }
+
+  /**
    * Get a single transaction
    */
   static async getTransactionById(id: number): Promise<Transaction> {

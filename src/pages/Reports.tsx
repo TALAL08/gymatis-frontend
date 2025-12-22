@@ -58,7 +58,7 @@ const Reports = () => {
         .reduce((sum, inv) => sum + Number(inv.netAmount || 0), 0) || 0;
 
       const pendingInvoices = invoices
-        ?.filter(inv => inv.status === InvoiceStatus.Pending)
+        ?.filter(inv => inv.status === InvoiceStatus.Unpaid)
         .length || 0;
 
       // Fetch member stats
