@@ -87,15 +87,15 @@ export function AddAccountDialog({ open, onOpenChange, onSuccess }: AddAccountDi
           render={({ field }) => (
             <FormItem>
               <FormLabel>Account Type *</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select onValueChange={(val) => field.onChange(Number(val))} value={String(field.value)}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value={AccountType.Bank}>Bank Account</SelectItem>
-                  <SelectItem value={AccountType.Cash}>Cash Account</SelectItem>
+                  <SelectItem value={String(AccountType.Bank)}>Bank Account</SelectItem>
+                  <SelectItem value={String(AccountType.Cash)}>Cash Account</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />

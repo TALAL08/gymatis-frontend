@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
+import { downloadSalarySlipPdf } from "@/lib/pdf";
 import { TrainerSalaryService } from "@/services/trainerSalaryService";
 import { AccountService } from "@/services/accountService";
 import { Account } from "@/models/interfaces/Account";
@@ -62,7 +61,7 @@ export function ViewSalarySlipDialog({ open, onOpenChange, salarySlip }: ViewSal
         .then((data) => {
           setAccounts(data);
           if (data.length > 0 && !selectedAccountId) {
-            setSelectedAccountId(data[0].id);
+            setSelectedAccountId(String(data[0].id));
           }
         })
         .catch(() => {
@@ -93,73 +92,10 @@ export function ViewSalarySlipDialog({ open, onOpenChange, salarySlip }: ViewSal
     }
   };
 
-  const generatePdf = () => {
-    const doc = new jsPDF();
-    const trainerName = `${salarySlip.trainer?.firstName || ""} ${salarySlip.trainer?.lastName || ""}`.trim();
-    const monthYear = `${MONTHS[salarySlip.month - 1]} ${salarySlip.year}`;
-
-    // Header
-    doc.setFontSize(20);
-    doc.setFont("helvetica", "bold");
-    doc.text("SALARY SLIP", 105, 20, { align: "center" });
-
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "normal");
-    doc.text(monthYear, 105, 28, { align: "center" });
-
-    // Trainer Info
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.text("Trainer Information", 14, 45);
-
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Name: ${trainerName}`, 14, 55);
-    doc.text(`Generated On: ${format(new Date(salarySlip.generatedAt), "PPP")}`, 14, 62);
-    if (salarySlip.paymentStatus === PaymentStatus.Paid && salarySlip.paidAt) {
-      doc.text(`Paid On: ${format(new Date(salarySlip.paidAt), "PPP")}`, 14, 69);
-    }
-    doc.text(`Status: ${salarySlip.paymentStatus == PaymentStatus.Paid ? "Paid" : "Unpaid"}`, 14, salarySlip.paidAt ? 76 : 69);
-
-    // Salary Breakdown Table
-    const startY = salarySlip.paidAt ? 90 : 83;
-    autoTable(doc, {
-      startY,
-      head: [["Description", "Amount"]],
-      body: [
-        ["Base Salary", `Rs. ${salarySlip.baseSalary.toLocaleString()}`],
-        ["Active Members", salarySlip.activeMemberCount.toString()],
-        ["Per Member Incentive", `Rs. ${salarySlip.perMemberIncentive.toLocaleString()}`],
-        ["Incentive Total", `Rs. ${salarySlip.incentiveTotal.toLocaleString()}`],
-      ],
-      theme: "striped",
-      headStyles: { fillColor: [59, 130, 246] },
-      styles: { fontSize: 11 },
-    });
-
-    // Gross Salary
-    const finalY = (doc as any).lastAutoTable.finalY + 10;
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.text("Gross Salary:", 14, finalY);
-    doc.setTextColor(59, 130, 246);
-    doc.text(`Rs. ${salarySlip.grossSalary.toLocaleString()}`, 60, finalY);
-    doc.setTextColor(0, 0, 0);
-
-    // Footer
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "italic");
-    doc.text("This is a computer-generated document.", 105, 280, { align: "center" });
-
-    return doc;
-  };
-
   const handleDownload = () => {
     setIsDownloading(true);
     try {
-      const doc = generatePdf();
-      const fileName = `salary-slip-${salarySlip.trainer?.firstName}-${salarySlip.trainer?.lastName}-${MONTHS[salarySlip.month - 1]}-${salarySlip.year}.pdf`;
-      doc.save(fileName);
+      downloadSalarySlipPdf(salarySlip);
       toast.success("Salary slip downloaded");
     } catch (error: any) {
       toast.error("Failed to generate PDF");
@@ -292,7 +228,7 @@ export function ViewSalarySlipDialog({ open, onOpenChange, salarySlip }: ViewSal
               </SelectTrigger>
               <SelectContent>
                 {accounts.map((account) => (
-                  <SelectItem key={account.id} value={account.id}>
+                  <SelectItem key={account.id} value={String(account.id)}>
                     {account.accountName}
                   </SelectItem>
                 ))}

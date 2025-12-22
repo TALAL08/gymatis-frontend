@@ -94,7 +94,7 @@ export function EditExpenseDialog({ open, onOpenChange, expense, onSuccess }: Ed
               <FormItem><FormLabel>Paid From Account *</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                  <SelectContent>{accounts?.map((acc) => <SelectItem key={acc.id} value={acc.id}>{acc.accountName}</SelectItem>)}</SelectContent>
+                  <SelectContent>{accounts?.map((acc) => <SelectItem key={acc.id} value={String(acc.id)}>{acc.accountName}</SelectItem>)}</SelectContent>
                 </Select><FormMessage />
               </FormItem>
             )} />

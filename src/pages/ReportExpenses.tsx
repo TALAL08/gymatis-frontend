@@ -212,7 +212,7 @@ export default function ReportExpenses() {
                 <SelectContent>
                   <SelectItem value="0">All Accounts</SelectItem>
                   {accounts?.map((acc) => (
-                    <SelectItem key={acc.id} value={acc.id}>
+                    <SelectItem key={acc.id} value={String(acc.id)}>
                       {acc.accountName}
                     </SelectItem>
                   ))}
