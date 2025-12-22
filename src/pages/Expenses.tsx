@@ -34,7 +34,6 @@ import {
 } from '@/components/ui/select';
 import { DataTablePagination } from '@/components/ui/data-table-pagination';
 import { AddExpenseDialog } from '@/components/expenses/AddExpenseDialog';
-import { EditExpenseDialog } from '@/components/expenses/EditExpenseDialog';
 import { DeleteExpenseDialog } from '@/components/expenses/DeleteExpenseDialog';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -334,34 +333,6 @@ return (
     {/* Dialogs */}
     <AddExpenseDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} onSuccess={() => refetch()} />
 
-    {selectedExpense && (
-      <>
-        <EditExpenseDialog
-          open={editDialogOpen}
-          onOpenChange={(open) => {
-            setEditDialogOpen(open);
-            if (!open) setSelectedExpense(null);
-          }}
-          expense={selectedExpense}
-          onSuccess={() => {
-            refetch();
-            setSelectedExpense(null);
-          }}
-        />
-        <DeleteExpenseDialog
-          open={deleteDialogOpen}
-          onOpenChange={(open) => {
-            setDeleteDialogOpen(open);
-            if (!open) setSelectedExpense(null);
-          }}
-          expense={selectedExpense}
-          onSuccess={() => {
-            refetch();
-            setSelectedExpense(null);
-          }}
-        />
-      </>
-    )}
   </div>
 );
 

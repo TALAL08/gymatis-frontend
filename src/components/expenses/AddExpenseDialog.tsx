@@ -87,8 +87,13 @@ export function AddExpenseDialog({ open, onOpenChange, onSuccess }: AddExpenseDi
             <FormField control={form.control} name="categoryId" render={({ field }) => (
               <FormItem><FormLabel>Category *</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger></FormControl>
-                  <SelectContent>{categories?.map((cat) => <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>)}</SelectContent>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" /></SelectTrigger>
+                    </FormControl>
+                  <SelectContent>
+                    {categories?.map((cat) => <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>)}
+                    </SelectContent>
                 </Select><FormMessage />
               </FormItem>
             )} />

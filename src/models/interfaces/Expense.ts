@@ -1,9 +1,10 @@
 export interface ExpenseCategory {
-  id: string;
-  gymId: string;
+  id: number;
+  gymId: number;
   name: string;
   description?: string | null;
   isActive: boolean;
+  isDefault: boolean;
   createdAt: string;
   updatedAt: string;
 }
